@@ -6,11 +6,48 @@
   This is the styles.css page for main page
 */
 
+main {
+  margin: auto;
+  width: 95%;
+  height: 80%;
+}
+
 nav {
-  border: 5px black solid;
   font-size: 30px;
+  height: 13%;
+  border: 2px green solid;
+  width: 96vw;
 }
 
 body {
-  border: 5px solid black;
+  border: 6px solid black;
+  height: 100vh;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  border: 2px red solid;
+}
+
+h1 {
+  border-left: 5px solid black;
+  border-bottom: 5px solid black;
+  margin-top: 0px;
+  margin-right: 10px;
+  padding-left: 8px;
+  padding-right: 5px;
+}
+
+.navbar-headers {
+  display: flex;
+  justify-content: space-between;
+}
+
+#course-input {
+  display: block;
+  margin-right: 70vw;
+  margin-top: 10px;
+  font-weight: bold;
+  padding-right: 40px;
 }
