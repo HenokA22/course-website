@@ -1,0 +1,16 @@
+/*
+  Henok Assalif
+  Date: May 4th, 2024
+  Section: AE, Peter Oh & Kasten Welsh
+
+  This is the styles.css page for main page
+*/
+
+nav {
+  border: 5px black solid;
+  font-size: 30px;
+}
+
+body {
+  border: 5px solid black;
+}
