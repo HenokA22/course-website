@@ -1,0 +1,20 @@
+nav {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+h1 {
+  font-size: 38px;
+}
+
+#uw {
+  border-left: 8px solid black;
+  padding-left: 5px;
+}
+
+#main-button {
+  border-right: 8px solid black;
+  padding-right: 5px;
+}
+

@@ -15,7 +15,6 @@ main {
 nav {
   font-size: 30px;
   height: 13%;
-  border: 2px green solid;
   width: 96vw;
 }
 
@@ -47,11 +46,10 @@ h1 {
   display: block;
   margin-top: 10px;
   font-weight: bold;
-  padding-right: 800px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+
 }
 
 #visual-schedule {
-
+  margin: auto;
+  padding-left: 70vw;
 }
