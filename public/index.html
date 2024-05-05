@@ -18,21 +18,34 @@
     <script src="index.js"></script>
   </head>
   <body>
-    <main>
-      <nav>
-        <header class="navbar-headers">
-          <div id="search-container">
-            <label for="course-input">
-              <strong>Search:</strong>
-              <input placeholder="CSE 154" id="course-input">
-            </label>
-          </div>
-          <h1>UW</h1>
-        </header>
-        <div id="visual-schedule">
-          <a href="schedule/visual.html">View Visual<br>Schedule</a>
+    <nav id="header">
+      <label id="displayLogin">
+        Not signed in
+      </label>
+      <label id="login">
+        Login
+      </label>
+    </nav>
+    <nav id="logo-header">
+      <h1 id="logo">UW</h1>
+      <label id="visual-schedule">
+        <a href="schedule/visual.html">View Visual Schedule</a>
+      </label>
+    </nav>
+
+    <section id="main-body">
+      <article id="filter">
+        <h1>Filter:</h1>
+      </article>
+      <article id="course-list">
+        <h1>Find Courses:</h1>
+        <div id="search-container">
+          <label for="course-input">
+            <strong>Search:</strong>
+          </label>
+          <input type="text" placeholder="Search" id="course-input">
         </div>
-      </nav>
-    </main>
+      </article>
+    </section>
   </body>
 </html>
