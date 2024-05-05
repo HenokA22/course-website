@@ -27,7 +27,6 @@ body {
 label {
   display: flex;
   flex-direction: column;
-  border: 2px red solid;
 }
 
 h1 {
@@ -46,8 +45,13 @@ h1 {
 
 #course-input {
   display: block;
-  margin-right: 70vw;
   margin-top: 10px;
   font-weight: bold;
-  padding-right: 40px;
+  padding-right: 800px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+#visual-schedule {
+
 }
