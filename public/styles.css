@@ -18,7 +18,7 @@ body {
   justify-content: end;
 }
 
-#login, #displayLogin, #logo, #visual-schedule {
+#login, #display-login, #logo, #visual-schedule {
   color: white;
   height: 100%;
   width: 8%;
@@ -39,9 +39,11 @@ a {
 #logo-header {
   display: flex;
   justify-content: space-between;
+  background-color: #4d307f;
+  height: 80px;
 }
 
-#login:hover, #displayLogin:hover, #logo:hover, #visual-schedule:hover {
+#login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover {
   background-color: lightgrey;
 }
 
@@ -52,7 +54,6 @@ a {
   height: 100vh;
   margin-top: 30px;
 }
-
 
 #filter-container, #course-list {
   border: solid 2px black;
@@ -71,6 +72,7 @@ a {
 
 #search-container {
   display: flex;
+  flex-direction: row;
   align-items: center;
 }
 
@@ -86,9 +88,3 @@ a {
 #filter-container form label {
   display: inline-block;
 }
-
-#logo-header {
-  background-color: #4d307f;
-  height: 80px;
-}
-
