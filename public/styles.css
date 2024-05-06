@@ -18,6 +18,15 @@ body {
   justify-content: end;
 }
 
+#copyright {
+  background-color: #212529;
+  color: white;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 #login, #display-login, #logo, #visual-schedule {
   color: white;
   height: 100%;
@@ -55,6 +64,7 @@ a {
   flex-direction: row;
   height: 100vh;
   margin-top: 30px;
+  margin-bottom: 30px;
 }
 
 #filter-container, #course-list, #searching-container {
