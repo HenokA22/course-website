@@ -34,8 +34,21 @@
     </nav>
 
     <section id="main-body">
-      <article id="filter">
+      <article id="filter-container">
         <h1>Filter:</h1>
+        <p>Course level:</p>
+        <form>
+          <input type="checkbox" name="course100">
+          <label for="course100">100</label><br>
+          <input type="checkbox" id="course200" name="course200">
+          <label for="course200">200</label><br>
+          <input type="checkbox" id="course300" name="course300">
+          <label for="course300">300</label><br>
+          <input type="checkbox" id="course400" name="course400">
+          <label for="course400">400</label><br>
+          <input type="checkbox" id="course500" name="course500">
+          <label for="course500">500</label><br>
+        </form>
       </article>
       <article id="course-list">
         <h1>Find Courses:</h1>
@@ -45,6 +58,11 @@
           </label>
           <input type="text" placeholder="Search" id="course-input">
         </div>
+        <section id="courses">
+        <article class="course">
+          <!-- List of courses here soon to come -->
+        </article>
+        </section>
       </article>
     </section>
   </body>

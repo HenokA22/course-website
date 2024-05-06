@@ -1,5 +1,5 @@
 /*
-  Henok Assalif
+  Henok Assalif & Jimmy Le
   Date: May 4th, 2024
   Section: AE, Peter Oh & Kasten Welsh
 
@@ -54,13 +54,13 @@ a {
 }
 
 
-#filter, #course-list {
+#filter-container, #course-list {
   border: solid 2px black;
   border-radius: 5px;
   margin: 0 50px 0 10px;
 }
 
-#filter {
+#filter-container {
   padding: 10px 80px 10px 10px;
 }
 
@@ -78,29 +78,17 @@ a {
   margin-bottom: 10px;
   margin-left: 15px;
   padding-right: 100%;
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
 }
 
-/* anything down below not rn  */
+#filter-container form label {
+  display: inline-block;
+}
 
 #logo-header {
   background-color: #4d307f;
   height: 80px;
 }
 
-
-
-label {
-  display: flex;
-  flex-direction: column;
-}
-
-.navbar-headers {
-  display: flex;
-  justify-content: space-between;
-}
-
-#course-input {
-  display: block;
-  margin-top: 10px;
-  font-weight: bold;
-}
