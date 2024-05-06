@@ -21,11 +21,13 @@ body {
 #login, #display-login, #logo, #visual-schedule {
   color: white;
   height: 100%;
-  width: 8%;
+  width: auto;
+  padding: 0 10px 0 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: nowrap;
 }
 
 a {
@@ -41,6 +43,7 @@ a {
   justify-content: space-between;
   background-color: #4d307f;
   height: 80px;
+  margin-bottom: 20px;
 }
 
 #login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover {
@@ -50,24 +53,22 @@ a {
 #main-body {
   display: flex;
   flex-direction: row;
-  justify-content: start;
   height: 100vh;
   margin-top: 30px;
 }
 
-#filter-container, #course-list {
+#filter-container, #course-list, #searching-container {
   border: solid 2px black;
   border-radius: 5px;
   margin: 0 50px 0 10px;
 }
 
-#filter-container {
-  padding: 10px 80px 10px 10px;
+#course-list, #searching-container {
+  flex-grow: 1;
 }
 
-#course-list {
-  padding-left: 10px;
-  padding-right: 60%;
+#searching-container, #filter-container, #course-list {
+  padding: 10px 5% 10px 10px;
 }
 
 #search-container {
@@ -77,12 +78,10 @@ a {
 }
 
 #course-input {
-  margin-bottom: 10px;
-  margin-left: 15px;
-  padding-right: 100%;
-  display: block;
-  margin-top: 10px;
+  margin-left: 10px;
   font-weight: bold;
+  flex-grow: 1;
+  max-width: 30%;
 }
 
 #filter-container form label {
