@@ -2,18 +2,17 @@
 *Fill in a short description here about the API's purpose.*
 This API allows the clients to send post information such as post name, data, and post message.
 
-## *Fill in Endpoint 1 Title*
-**Request Format:** *Fill in example request format, i.e. the path*
+## *Fill in Endpoint 2 Title*
+**Request Format:** */login*
 
 **Request Type:** Get
 
-**Returned Data Format**: Text
+**Returned Data Format**: text
 
-**Description:** Returns information pertaining components of a post. Specifically they are name, date, and
- * message.
+**Description:** Returns information pertaining if a username and password
+is in a database
 
-**Example Request:** *Fill in example request*
-
+**Example Request:**
 **Example Response:**
 *Fill in example response in the ticks*
 
