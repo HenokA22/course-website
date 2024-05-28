@@ -36,14 +36,30 @@ app.get("/getItems", async function(req, res) {
 });
 
 // Feature #2
-app.get("/login", async function(req, res) {
+app.post("/login", async function(req, res) {
   // Check if username and passaword are in database
+  let username = req.body.username;
+  let password = req.body.password;
+
+  let query = "SELECT username, password, loginStatus FROM users WHERE username = ? AND password = ?";
   try {
-
+    let db = await getDBConnection();
+    let result = await db.get(query, [username, password]);
+    if(result !== undefined) {
+      // here we know the login was sucessful
+      // we can now update the login status
+      let updateQuery = "UPDATE users SET loginStatus = ? WHERE username = ? AND password = ?";
+      await db.run(updateQuery, [true, username, password]);
+      await db.close();
+      res.status(SUCCESS_CODE).send("Login successful");
+    } else {
+      await db.close();
+      res.status(USER_ERROR_CODE).send("Login failed. Invalid user.");
+    }
   } catch (error) {
-
+    console.log(errror);
   }
-})
+});
 
 // Feature #3
 app.get("/itemDetails/:itemName", async function(req, res) {
@@ -68,16 +84,16 @@ app.get("/itemDetails/:itemName", async function(req, res) {
 // Feature #4
 app.post("/checkCourse", async function(req, res) {
   /**
-   * 1.) Figure out if user is logged in
+   * 1. Figure out if user is logged in
    *
-   * 2.) If so , check the clients request to add a class is successful (This is distingushed by
+   * 2. If so , check the clients request to add a class is successful (This is distingushed by
    *    whether or not the class is at maximum capcity
    *
-   * 3.) An unique 6 digit combo is created if successful is reached
+   * 3. An unique 6 digit combo is created if successful is reached
    *
-   * 4.) update the server with course enrollment
+   * 4. update the server with course enrollment
    *
-   * 5.) send back the code
+   * 5. send back the code
    */
   try {
 
@@ -89,27 +105,27 @@ app.post("/checkCourse", async function(req, res) {
 // Feature #5
 app.get("/searchClass/:className", async function(req, res) {
   /**
-   * 1.) process query parameters , (course level, subject of class, credits)
+   * 1. process query parameters , (course level, subject of class, credits)
    *     - Later possibly implement an option for to display all classes that match filter options
-   * 2.) Grab information from data base, and place into a JSON object
+   * 2. Grab information from data base, and place into a JSON object
    *
-   * 3.) send information back  to the client
+   * 3. send information back  to the client
    */
 });
 
 // Feature #6
 app.get("/viewTransaction", async function(req, res) {
   /**
-   * 1.) Check if user is logged in
+   * 1. Check if user is logged in
    *
-   * 2.) Grab (transaction history ) schedule history from database?
+   * 2. Grab (transaction history ) schedule history from database?
    */
 });
 
 /**
- * 1.) Goals finish one endpoint by tonight
+ * 1. Goals finish one endpoint by tonight
  *
- * 2.) wrap up database design on sqlite
+ * 2. wrap up database design on sqlite
  *
  */
 
