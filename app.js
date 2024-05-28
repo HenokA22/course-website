@@ -8,17 +8,16 @@ const sqlite3 = require("sqlite3");
 const cookieParser = require("cookie-parser");
 // how to use cookie parser: https://github.com/expressjs/cookie-parser
 const SUCCESS_CODE = 200;
-const SEVERE_ERROR_CODE = 500;
+const SERVER_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
 const DEFAULT_PORT = 8000;
 
 // for application/x-www-form-urlencoded
-app.use(express.urlencoded({ extended: true })); // built-in middleware
+app.use(express.urlencoded({extended: true})); // built-in middleware
 // for application/json
 app.use(express.json()); // built-in middleware
 // for multipart/form-data (required with FormData)
 app.use(multer().none()); // requires the "multer" module
-
 
 /** Reterieves all the classes alongside their information from the database */
 app.get("/getItems", async function(req, res) {
@@ -32,7 +31,7 @@ app.get("/getItems", async function(req, res) {
     res.json(finish);
     await closeDbConnection(db);
   } catch (error) {
-    res.type("text").status(STATUS_CODE_500)
+    res.type("text").status(SERVER_ERROR_CODE)
       .send("An error occurred on the server. Try again later.");
   }
 });
@@ -43,14 +42,17 @@ app.post("/login", async function(req, res) {
   let username = req.body.username;
   let password = req.body.password;
 
-  if(username && password) {
-    let query = "SELECT username, password, loginStatus FROM users WHERE username = ? AND password = ?";
+  if (username && password) {
+    let query = "SELECT username, password, loginStatus FROM users WHERE username = ?" +
+                " AND password = ?";
     try {
       let db = await getDBConnection();
       let result = await db.get(query, [username, password]);
-      if(result !== undefined) {
-        // here we know the login was sucessful
-        // we can now update the login status
+      if (result !== undefined) {
+        /**
+         * here we know the login was sucessful
+         * we can now update the login status
+         */
         let updateQuery = "UPDATE users SET loginStatus = ? WHERE username = ? AND password = ?";
         await db.run(updateQuery, ["true", username, password]);
         res.type("text").status(SUCCESS_CODE)
@@ -60,7 +62,9 @@ app.post("/login", async function(req, res) {
           .send("Login failed. Invalid user.");
       }
     } catch (error) {
-      console.log(errror);
+
+      // Change this later
+      console.log(error);
     }
   }
 });
@@ -74,24 +78,23 @@ app.get("/itemDetails/:itemName", async function(req, res) {
   console.log(itemName);
 
   // However this should always pass as this would only execute on a callback
-  if(itemName) {
+  if (itemName) {
     try {
       let query = "SELECT * FROM classes WHERE name = ?;";
       let db = await getDBConnection();
       let result = await db.get(query, req.params.itemName);
-      if(result !== undefined) {
+      if (result !== undefined) {
         // removing id key because it isn't needed
         delete result.id;
         res.json(result);
         await closeDbConnection(db);
       } else {
         // May change later
-        res.type("text").status(SEVERE_ERROR_CODE)
+        res.type("text").status(SERVER_ERROR_CODE)
           .send("An error occurred on the server. Try again later.");
       }
-
     } catch (error) {
-      res.type("text").status(SEVERE_ERROR_CODE)
+      res.type("text").status(SERVER_ERROR_CODE)
       .send("An error occurred on the server. Try again later.");
     }
   } else {
