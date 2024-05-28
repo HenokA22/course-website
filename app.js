@@ -23,10 +23,10 @@ app.get("/getItems", async function(req, res) {
   try {
     let db = await getDBConnection();
     let query = "SELECT * FROM classes ORDER BY name DESC;";
-      let result = await db.all(query);
-      let finish = {
-        "yips": result
-      };
+    let result = await db.all(query);
+    let finish = {
+      "classes": result
+    };
     res.json(finish);
     await closeDbConnection(db);
   } catch (error) {
@@ -138,9 +138,6 @@ async function closeDbConnection(db) {
     console.error("Failed to close the database connection:", error);
   }
 }
-
-
-
 
 
 // tells the code to serve static files in a directory called 'public'
