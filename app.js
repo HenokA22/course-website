@@ -17,8 +17,28 @@ app.use(express.json()); // built-in middleware
 // for multipart/form-data (required with FormData)
 app.use(multer().none()); // requires the "multer" module
 
+
+// Feature #1
+app.get("/getItems", async function(req, res) {
+  // Get all the items from database
+
+});
+
+// Feature #2
+app.get("/login", async function(req, res) {
+  // Check if username and passaword are in database
+  try {
+
+  } catch (error) {
+
+  }
+})
+
 // Feature #3
-app.get("/getItem/:itemName", async function(req, res) {
+app.get("/itemDetails/:itemName", async function(req, res) {
+  /**
+   * Get further information about an item, should be in the form of a JSON object
+   */
   try {
     let data = await fstat.readFile("data/items.json", "utf-8");
     data = JSON.parse(data);
@@ -35,7 +55,19 @@ app.get("/getItem/:itemName", async function(req, res) {
 });
 
 // Feature #4
-app.get("/checkCourse", async function(req, res) {
+app.post("/checkCourse", async function(req, res) {
+  /**
+   * 1.) Figure out if user is logged in
+   *
+   * 2.) If so , check the clients request to add a class is successful (This is distingushed by
+   *    whether or not the class is at maximum capcity
+   *
+   * 3.) An unique 6 digit combo is created if successful is reached
+   *
+   * 4.) update the server with course enrollment
+   *
+   * 5.) send back the code
+   */
   try {
 
   } catch (error) {
@@ -43,14 +75,32 @@ app.get("/checkCourse", async function(req, res) {
   }
 });
 
-// Feature #2
-app.get("/login", async function(req, res) {
-  try {
+// Feature #5
+app.get("/searchClass/:className", async function(req, res) {
+  /**
+   * 1.) process query parameters , (course level, subject of class, credits)
+   *     - Later possibly implement an option for to display all classes that match filter options
+   * 2.) Grab information from data base, and place into a JSON object
+   *
+   * 3.) send information back  to the client
+   */
+});
 
-  } catch (error) {
+app.get("/viewTransaction", async function(req, res) {
+  /**
+   * 1.) Check if user is logged in
+   */
+});
 
-  }
-})
+/**
+ * 1.) Goals finish one endpoint by tonight
+ *
+ * 2.) wrap up database design on sqlite
+ *
+ */
+
+
+
 
 
 
