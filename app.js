@@ -20,7 +20,7 @@ app.use(express.json()); // built-in middleware
 app.use(multer().none()); // requires the "multer" module
 
 
-// Feature #1
+/** Reterieves all the classes alongside their information from the database */
 app.get("/getItems", async function(req, res) {
   let query = "SELECT * FROM classes ORDER BY name DESC;";
   try {
@@ -37,7 +37,7 @@ app.get("/getItems", async function(req, res) {
   }
 });
 
-// Feature #2
+/** Checks whether or not a user login is successful  */
 app.post("/login", async function(req, res) {
   // Check if username and passaword are in database
   let username = req.body.username;
@@ -52,10 +52,12 @@ app.post("/login", async function(req, res) {
         // here we know the login was sucessful
         // we can now update the login status
         let updateQuery = "UPDATE users SET loginStatus = ? WHERE username = ? AND password = ?";
-        await db.run(updateQuery, [true, username, password]);
-        res.status(SUCCESS_CODE).send("Login successful");
+        await db.run(updateQuery, ["true", username, password]);
+        res.type("text").status(SUCCESS_CODE)
+          .send("Login successful");
       } else {
-        res.status(USER_ERROR_CODE).send("Login failed. Invalid user.");
+        res.type("text").status(USER_ERROR_CODE)
+          .send("Login failed. Invalid user.");
       }
     } catch (error) {
       console.log(errror);
@@ -63,23 +65,38 @@ app.post("/login", async function(req, res) {
   }
 });
 
-// Feature #3
+// Feature #3 (Similar to feature one but restricted to one row)
 app.get("/itemDetails/:itemName", async function(req, res) {
   /**
    * Get further information about an item, should be in the form of a JSON object
    */
-  try {
-    let data = await fstat.readFile("data/items.json", "utf-8");
-    data = JSON.parse(data);
-    let itemData = data[req.params.itemName];
-    res.type("json").send(itemData);
-  } catch (error) {
-    res.type("text");
-    if (err.code === "ENOENT") {
-      res.status(SEVERE_ERROR_CODE).send("file does not exist");
-    } else {
-      res.status(SEVERE_ERROR_CODE).send("something went wrong on the server. Please try again.");
+  let itemName = req.params.itemName;
+  console.log(itemName);
+
+  // However this should always pass as this would only execute on a callback
+  if(itemName) {
+    try {
+      let query = "SELECT * FROM classes WHERE name = ?;";
+      let db = await getDBConnection();
+      let result = await db.get(query, req.params.itemName);
+      if(result !== undefined) {
+        // removing id key because it isn't needed
+        delete result.id;
+        res.json(result);
+        await closeDbConnection(db);
+      } else {
+        // May change later
+        res.type("text").status(SEVERE_ERROR_CODE)
+          .send("An error occurred on the server. Try again later.");
+      }
+
+    } catch (error) {
+      res.type("text").status(SEVERE_ERROR_CODE)
+      .send("An error occurred on the server. Try again later.");
     }
+  } else {
+    res.type("text").send(USER_ERROR_CODE)
+      .send("No item specified");
   }
 });
 
