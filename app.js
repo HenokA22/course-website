@@ -20,9 +20,9 @@ app.use(multer().none()); // requires the "multer" module
 
 // Feature #1
 app.get("/getItems", async function(req, res) {
+  let query = "SELECT * FROM classes ORDER BY name DESC;";
   try {
     let db = await getDBConnection();
-    let query = "SELECT * FROM classes ORDER BY name DESC;";
     let result = await db.all(query);
     let finish = {
       "classes": result
@@ -41,23 +41,23 @@ app.post("/login", async function(req, res) {
   let username = req.body.username;
   let password = req.body.password;
 
-  let query = "SELECT username, password, loginStatus FROM users WHERE username = ? AND password = ?";
-  try {
-    let db = await getDBConnection();
-    let result = await db.get(query, [username, password]);
-    if(result !== undefined) {
-      // here we know the login was sucessful
-      // we can now update the login status
-      let updateQuery = "UPDATE users SET loginStatus = ? WHERE username = ? AND password = ?";
-      await db.run(updateQuery, [true, username, password]);
-      await db.close();
-      res.status(SUCCESS_CODE).send("Login successful");
-    } else {
-      await db.close();
-      res.status(USER_ERROR_CODE).send("Login failed. Invalid user.");
+  if(username && password) {
+    let query = "SELECT username, password, loginStatus FROM users WHERE username = ? AND password = ?";
+    try {
+      let db = await getDBConnection();
+      let result = await db.get(query, [username, password]);
+      if(result !== undefined) {
+        // here we know the login was sucessful
+        // we can now update the login status
+        let updateQuery = "UPDATE users SET loginStatus = ? WHERE username = ? AND password = ?";
+        await db.run(updateQuery, [true, username, password]);
+        res.status(SUCCESS_CODE).send("Login successful");
+      } else {
+        res.status(USER_ERROR_CODE).send("Login failed. Invalid user.");
+      }
+    } catch (error) {
+      console.log(errror);
     }
-  } catch (error) {
-    console.log(errror);
   }
 });
 
@@ -121,14 +121,6 @@ app.get("/viewTransaction", async function(req, res) {
    * 2. Grab (transaction history ) schedule history from database?
    */
 });
-
-/**
- * 1. Goals finish one endpoint by tonight
- *
- * 2. wrap up database design on sqlite
- *
- */
-
 
 /**
  * Establishes a database connection to the database and returns the database object.
