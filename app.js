@@ -19,6 +19,19 @@ app.use(express.json()); // built-in middleware
 // for multipart/form-data (required with FormData)
 app.use(multer().none()); // requires the "multer" module
 
+/**
+ * The of the value of a currentCourse field in the data base should be an array of json objects with it key the name of class on the users schedule and the value another json object holding infromation about the key
+ * the name
+ *
+ * {
+ *  name (name of class from classes table) : {
+ *                                                date(recieved from classes table): value
+ *                                                subject(recieved from classes table): value
+ *                                                description(recieved from classes table): value
+ *                                            }
+ * }
+ */
+
 /** Reterieves all the classes alongside their information from the database */
 app.get("/getItems", async function(req, res) {
   let query = "SELECT * FROM classes ORDER BY name DESC;";
@@ -49,7 +62,7 @@ app.post("/login", async function(req, res) {
       let result = await db.get(query, [username, password]);
       if (result !== undefined) {
         /**
-         * here we know the login was sucessful
+         * here we know the login is possible
          * we can now update the login status
          */
         let updateQuery = "UPDATE login SET loginStatus = ? WHERE username = ? AND password = ?";
@@ -61,27 +74,30 @@ app.post("/login", async function(req, res) {
           .send("Login failed. Invalid user.");
       }
     } catch (error) {
-
+      // an error occured with one of the queries here
       // Change this later
       console.log(error);
     }
+  } else {
+    // Case such that user didn't add there username or password.
+    res.type("text").status(USER_ERROR_CODE)
+      .send("Username or Password is empty, please try again");
   }
 });
 
 // Feature #3 (Similar to feature one but restricted to one row)
-app.get("/itemDetails/:itemName", async function(req, res) {
+app.get("/itemDetails/:className", async function(req, res) {
   /**
    * Get further information about an item, should be in the form of a JSON object
    */
-  let itemName = req.params.itemName;
-  console.log(itemName);
+  let className = req.params.className;
 
-  // However this should always pass as this would only execute on a callback
-  if (itemName) {
+  // However this conditional should always pass as it would only execute on a callback
+  if (className) {
     try {
       let query = "SELECT * FROM classes WHERE name = ?;";
       let db = await getDBConnection();
-      let result = await db.get(query, req.params.itemName);
+      let result = await db.get(query, req.params.className);
       if (result !== undefined) {
         // removing id key because it isn't needed
         delete result.id;
@@ -108,7 +124,8 @@ app.post("/checkCourse", async function(req, res) {
    * 1. Figure out if user is logged in
    *
    * 2. If so , check the clients request to add a class is successful (This is distingushed by
-   *    whether or not the class is at maximum capcity
+   *    whether or not the class is at maximum capcity or this class conflicts with a users
+   *    schedule (to do this you must search the users current courses value)
    *
    * 3. An unique 6 digit combo is created if successful is reached
    *
@@ -116,10 +133,46 @@ app.post("/checkCourse", async function(req, res) {
    *
    * 5. send back the code
    */
-  try {
 
-  } catch (error) {
+  // These are the two parameters to the form body object
+  let userName = req.body.userName;
+  let className = req.body.className;
+  if(userName) {
+    let query = "SELECT loginStatus FROM login WHERE username = ?";
+    try {
+      let db = await getDBConnection();
+      let result = await db.get(query, userName);
 
+      // Extracting the text (true / false)
+      let isUserLogin = result.loginStatus;
+
+      if(isUserLogin === "true") {
+        /**
+         * Check if user can add class
+         * 1.) Does this class exists
+         *
+         * 2.) Is there capacity
+         *
+         * 3.) does it conflict with users schedule
+         */
+
+
+      } else {
+        res.type("text").status(USER_ERROR_CODE)
+          .send("You are not logged in. Please sign in");
+      }
+    } catch (error) {
+
+    }
+  } else {
+    /**
+     * I am gonna assume that if a username isn't found then the user is not logged in
+     * The implementation of what body params that get send back is going to depend on how this
+     * is hooked up on the front end.
+     */
+
+    res.type("text").status(USER_ERROR_CODE)
+      .send("No username is specified. Please login in before trying to adding a class")
   }
 });
 
