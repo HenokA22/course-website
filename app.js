@@ -20,8 +20,19 @@ app.use(multer().none()); // requires the "multer" module
 
 // Feature #1
 app.get("/getItems", async function(req, res) {
-  // Get all the items from database
-
+  try {
+    let db = await getDBConnection();
+    let query = "SELECT * FROM classes ORDER BY name DESC;";
+      let result = await db.all(query);
+      let finish = {
+        "yips": result
+      };
+    res.json(finish);
+    await closeDbConnection(db);
+  } catch (error) {
+    res.type("text").status(STATUS_CODE_500)
+      .send("An error occurred on the server. Try again later.");
+  }
 });
 
 // Feature #2
@@ -103,16 +114,36 @@ app.get("/viewTransaction", async function(req, res) {
  */
 
 
+/**
+ * Establishes a database connection to the database and returns the database object.
+ * Any errors that occur should be caught in the function that calls this one.
+ * @returns {sqlite3.Database} - The database object for the connection.
+ */
+async function getDBConnection() {
+  const db = await sqlite.open({
+    filename: "myplan.db",
+    driver: sqlite3.Database
+  });
+  return db;
+}
+
+/**
+ * Closes the database connection.
+ * @param {sqlite3.Database} db - The database connection.
+ */
+async function closeDbConnection(db) {
+  try {
+    await db.close();
+  } catch (error) {
+    console.error("Failed to close the database connection:", error);
+  }
+}
+
 
 
 
 
 // tells the code to serve static files in a directory called 'public'
 app.use(express.static('public'));
-
-/*
- * Allows us to change the port easily by setting an environment
- * variable, so your app works with our grading software
- */
 const PORT = process.env.PORT || DEFAULT_PORT;
 app.listen(PORT);
