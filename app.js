@@ -86,9 +86,12 @@ app.get("/searchClass/:className", async function(req, res) {
    */
 });
 
+// Feature #6
 app.get("/viewTransaction", async function(req, res) {
   /**
    * 1.) Check if user is logged in
+   *
+   * 2.) Grab (transaction history ) schedule history from database?
    */
 });
 
