@@ -43,8 +43,7 @@ app.post("/login", async function(req, res) {
   let password = req.body.password;
 
   if (username && password) {
-    let query = "SELECT username, password, loginStatus FROM users WHERE username = ?" +
-                " AND password = ?";
+    let query = "SELECT * FROM login WHERE username = ? AND password = ?";
     try {
       let db = await getDBConnection();
       let result = await db.get(query, [username, password]);
@@ -53,7 +52,7 @@ app.post("/login", async function(req, res) {
          * here we know the login was sucessful
          * we can now update the login status
          */
-        let updateQuery = "UPDATE users SET loginStatus = ? WHERE username = ? AND password = ?";
+        let updateQuery = "UPDATE login SET loginStatus = ? WHERE username = ? AND password = ?";
         await db.run(updateQuery, ["true", username, password]);
         res.type("text").status(SUCCESS_CODE)
           .send("Login successful");
