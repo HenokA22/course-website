@@ -2,7 +2,9 @@
 
 const express = require('express');
 const app = express();
-const multer = require("multer").promises;
+const multer = require("multer");
+const sqlite = require('sqlite');
+const sqlite3 = require('sqlite3');
 const SUCCESS_CODE = 200;
 const SEVERE_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
