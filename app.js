@@ -11,6 +11,7 @@ const SUCCESS_CODE = 200;
 const SERVER_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
 const DEFAULT_PORT = 8000;
+let conformationCodes = new Set();
 
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true})); // built-in middleware
@@ -20,7 +21,7 @@ app.use(express.json()); // built-in middleware
 app.use(multer().none()); // requires the "multer" module
 
 /**
- * NOTES ON STRUCTURE
+ * NOTES ON STRUCTURE of various attributes in the database
  * The of the value of a currentCourse field in the data base should be an array of json objects with it key the name of class on the users schedule and the value another json object holding infromation about the key
  * the name
  *
@@ -33,7 +34,18 @@ app.use(multer().none()); // requires the "multer" module
  * }
  *
  *
+ *
  * The date field in format of D D D  x:xx-x:xx period(am/pm)
+ *
+ * course history: Each value is formated as an Array of JS objects that are in the form
+ * {
+ *   transactionCode: currentCourseObject (the current states of the users value for currentCourses
+ *                                         From userCourses table)
+ *
+ *
+ *
+ *
+ * }
  */
 
 /** Reterieves all the classes alongside their information from the database */
@@ -246,10 +258,8 @@ app.post("/enrollCourse", async function(req, res) {
                * 1.) add the class as an information a key value pair into current courses schedule
                *    (DONE)
                * 2.) Update the backend file with new course schedule (DONE)
-               * 3.) Send back unique code (STILL DO)
+               * 3.) Send back unique code (STILL DO) and save current set of classes
               */
-              res.text("text").status(SUCCESS_CODE)
-                .send("Successfully added course");
 
               // Adding new key class into course list
               currentCoursesJSOB.className = { date: toBeEnrolledCourseDate,
@@ -265,6 +275,29 @@ app.post("/enrollCourse", async function(req, res) {
 
             // Updated the query (Remove this later)
             let userCoursesUpdated = await db.get(updateCourseQuery, userName);
+
+            // Create random 6 digitsCode
+            /**
+             * create random 6 digit code ( generate number from 33 to 122 )
+             * check if set has it
+             * if not then add it set
+             *
+             * if so try again
+             *
+             * add new code and current courses to users course history array (may be long)
+             *
+             * then push code to course history array
+             */
+
+            let newCode = "";
+
+
+
+            // Append confirmation code
+            res.text("text").status(SUCCESS_CODE)
+                .send("Successfully added course");
+
+
 
 
             }
