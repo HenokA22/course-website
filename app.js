@@ -56,7 +56,7 @@ app.post("/login", async function(req, res) {
   let password = req.body.password;
 
   if (username && password) {
-    let query = "SELECT * FROM login WHERE username = ? AND password = ?";
+    let query = "SELECT * FROM login WHERE username = ? AND password = ?;";
     try {
       let db = await getDBConnection();
       let result = await db.get(query, [username, password]);
@@ -65,7 +65,7 @@ app.post("/login", async function(req, res) {
          * here we know the login is possible
          * we can now update the login status
          */
-        let updateQuery = "UPDATE login SET loginStatus = ? WHERE username = ? AND password = ?";
+        let updateQuery = "UPDATE login SET loginStatus = ? WHERE username = ? AND password = ?;";
         await db.run(updateQuery, ["true", username, password]);
         res.type("text").status(SUCCESS_CODE)
           .send("Login successful");
@@ -119,12 +119,12 @@ app.get("/itemDetails/:className", async function(req, res) {
 });
 
 // Feature #4
-app.post("/checkCourse", async function(req, res) {
+app.post("/enrollCourse", async function(req, res) {
   /**
-   * 1. Figure out if user is logged in
+   * 1. Figure out if user is logged in (DONE)
    *
    * 2. If so , check the clients request to add a class is successful (This is distingushed by
-   *    whether or not the class is at maximum capcity or this class conflicts with a users
+   *    whether or not the class is at maximum capacity or this class conflicts with a users
    *    schedule (to do this you must search the users current courses value)
    *
    * 3. An unique 6 digit combo is created if successful is reached
@@ -138,7 +138,7 @@ app.post("/checkCourse", async function(req, res) {
   let userName = req.body.userName;
   let className = req.body.className;
   if(userName) {
-    let query = "SELECT loginStatus FROM login WHERE username = ?";
+    let query = "SELECT loginStatus FROM login WHERE username = ?;";
     try {
       let db = await getDBConnection();
       let result = await db.get(query, userName);
@@ -156,7 +156,80 @@ app.post("/checkCourse", async function(req, res) {
          * 3.) does it conflict with users schedule
          */
 
+        // Note that classname is guranteed to be filled as client picks a class to make a request
+        let query2 = "SELECT availableSeats, date FROM classes WHERE name = ?;";
+        let classSeats = db.get(query2, className);
+        if(classSeats !== null) {
+          // The class does exist so now check its capacity
+          let totalSeatsVal = classSeats.availableSeats;
+          let toBeEnrolledCourseDate = classSeats.date;
+          if(totalSeatsVal > 0) {
+            // The student can enroll meets the space requirements so now check schedule conflict
 
+            // Getting users JSON String currentCourses from database
+            let query3 = "SELECT currentCourses FROM userCourses WHERE username = ?;";
+            let inClassInDB = db.get(query3, userName);
+
+            // Santitizing the data into workable form
+            let currentCoursesJSONString = inClassInDB.currentCourses;
+            let currentCoursesJSOB = JSON.parse(currentCoursesJSONString);
+            let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
+
+            // Check all the dates of the object
+            let conflictInSchedule = false;
+            for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
+              let currentCourseDateEncode = key.date;
+
+              // Split on double space which results in the time and days
+              let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
+              let currentCourseDateSplit = currentCourseDateEncode.split("  ");
+
+              // Storing days and times for both dates to compare
+              let selectedCourseDays = selectedCourseDateSplit[0];
+              let selectedCourseTimes = selectedCourseDateSplit[1];
+              let currentCourseDays = currentCourseDateSplit[0];
+              let currentCourseTimes = currentCourseDays[1];
+
+              // Splitting individual dates among each other
+              let selectedCourseDaysSplit = selectedCourseDays.split(" ");
+              let currentCourseDaysSplit = currentCourseDays.split(" ");
+
+
+              /**
+               * Check each day the to be enrolled course takes places against logged in user
+               * current course days
+               */
+              for(let j = 0; i < selectedCourseDaysSplit.length; i += 1) {
+                if (currentCourseDaysSplit.includes(selectedCourseDaysSplit[i])) {
+                  // Checking if two schedules overlap
+                  conflictInSchedule = timesOverlap(selectedCourseTimes, currentCourseTimes);
+                  if (conflictInSchedule) {
+                    i = selectedCourseDaysSplit.length;
+                    j = currentCourseKeyArr.length;
+                    res.type("text").status(USER_ERROR_CODE)
+                      .send("A conflict in your schedule has occured");
+                  }
+                }
+              }
+            }
+
+            // No over lap takes place so add course to user course schedule
+            if (!conflictInSchedule) {
+              /**
+               * 1.) add the class as an information a key value pair into current courses schedule
+               * 2.) Update the backend file with new course schedule
+              */
+              res.text("text").status(SUCCESS_CODE)
+                .send("Successfully added course");
+            }
+          } else {
+            res.type("text").status(USER_ERROR_CODE)
+              .send("This course is add capacity. Cannot enroll");
+          }
+        } else {
+          res.type("text").status(USER_ERROR_CODE)
+            .send("This class does not exist");
+        }
       } else {
         res.type("text").status(USER_ERROR_CODE)
           .send("You are not logged in. Please sign in");
@@ -195,6 +268,60 @@ app.get("/viewTransaction", async function(req, res) {
    * 2. Grab (transaction history ) schedule history from database?
    */
 });
+
+/**
+ * Converts a 12-hour format time (e.g., "9:30 am") to the number of minutes since midnight.
+ * @param {string} time - The time in 12-hour format (e.g., "9:30 am" or "10:00 pm").
+ * @returns {number} - The number of minutes since midnight.
+ */
+function convertToMinutes(time) {
+  // Split the time into the main time part and the period (am/pm)
+  let [timePart, period] = time.split(" ");
+  // Split the main time part into hours and minutes
+  let [hours, minutes] = timePart.split(":").map(Number);
+
+  // Convert hours to 24-hour format if period is pm and it's not 12 pm
+  if (period === "pm" && hours !== 12) {
+    hours += 12;
+  // Convert hours to 0 if period is am and it's 12 am
+  } else if (period === "am" && hours === 12) {
+    hours = 0;
+  }
+
+  // Return the total minutes since midnight
+  return hours * 60 + minutes;
+}
+
+/**
+ * Parses a time range string (e.g., "9:30-10:30 am") into an object with start and end times in minutes since midnight.
+ * @param {string} timeRange - The time range in the format "x:xx-x:xx am/pm".
+ * @returns {Object} - An object with the start and end times in minutes since midnight.
+ */
+function parseTimeRange(timeRange) {
+  // Split the time range into start and end times
+  let [startTime, endTime] = timeRange.split("-");
+  // Convert the start and end times to minutes since midnight
+  return {
+    start: convertToMinutes(startTime),
+    end: convertToMinutes(endTime)
+  };
+}
+
+/**
+ * Checks if two time ranges overlap.
+ * @param {string} range1 - The first time range in the format "x:xx-x:xx am/pm".
+ * @param {string} range2 - The second time range in the format "x:xx-x:xx am/pm".
+ * @returns {boolean} - True if the time ranges overlap, false otherwise.
+ */
+function timesOverlap(range1, range2) {
+  // Parse the first time range into start and end times in minutes since midnight
+  const { start: start1, end: end1 } = parseTimeRange(range1);
+  // Parse the second time range into start and end times in minutes since midnight
+  const { start: start2, end: end2 } = parseTimeRange(range2);
+
+  // Check if the time ranges overlap
+  return start1 < end2 && start2 < end1;
+}
 
 /**
  * Establishes a database connection to the database and returns the database object.
