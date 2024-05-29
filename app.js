@@ -20,6 +20,7 @@ app.use(express.json()); // built-in middleware
 app.use(multer().none()); // requires the "multer" module
 
 /**
+ * NOTES ON STRUCTURE
  * The of the value of a currentCourse field in the data base should be an array of json objects with it key the name of class on the users schedule and the value another json object holding infromation about the key
  * the name
  *
@@ -30,6 +31,9 @@ app.use(multer().none()); // requires the "multer" module
  *                                                description(recieved from classes table): value
  *                                            }
  * }
+ *
+ *
+ * The date field in format of D D D  x:xx-x:xx period(am/pm)
  */
 
 /** Reterieves all the classes alongside their information from the database */
@@ -55,6 +59,10 @@ app.post("/login", async function(req, res) {
   let username = req.body.username;
   let password = req.body.password;
 
+  // This is a boolean flag that lets backend know if username should be saved
+  let savePassWord = req.body.savePassWord;
+
+
   if (username && password) {
     let query = "SELECT * FROM login WHERE username = ? AND password = ?;";
     try {
@@ -69,6 +77,16 @@ app.post("/login", async function(req, res) {
         await db.run(updateQuery, ["true", username, password]);
         res.type("text").status(SUCCESS_CODE)
           .send("Login successful");
+
+        // Saving username to browser if user has said so
+        if(savePassWord) {
+          let grabbingUserID = "SELECT id FROM userCourses WHERE username = ?;"
+          let userIDObj = await db.get(grabbingUserID, username);
+          let userID = userIDObj.id;
+
+          // Saving username in localstorage based on user id
+          window.localStorage.setItem("User " + userID + " username", username);
+        }
       } else {
         res.type("text").status(USER_ERROR_CODE)
           .send("Login failed. Invalid user.");
@@ -157,18 +175,26 @@ app.post("/enrollCourse", async function(req, res) {
          */
 
         // Note that classname is guranteed to be filled as client picks a class to make a request
-        let query2 = "SELECT availableSeats, date FROM classes WHERE name = ?;";
-        let classSeats = db.get(query2, className);
+        let query2 = "SELECT * FROM classes WHERE name = ?;";
+        let classInfo = await db.get(query2, className);
         if(classSeats !== null) {
           // The class does exist so now check its capacity
-          let totalSeatsVal = classSeats.availableSeats;
-          let toBeEnrolledCourseDate = classSeats.date;
+          let totalSeatsVal = classInfo.availableSeats;
+          let toBeEnrolledCourseDate = classInfo.date;
           if(totalSeatsVal > 0) {
+
+            // Update back avaibleseats count now
+            let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
+                                  " WHERE name = ?;";
+            let updateDBSeatCount = await db.get(updateSeatCount, className);
+
+            // No need to use the variable (look later to remove it)
+
             // The student can enroll meets the space requirements so now check schedule conflict
 
             // Getting users JSON String currentCourses from database
             let query3 = "SELECT currentCourses FROM userCourses WHERE username = ?;";
-            let inClassInDB = db.get(query3, userName);
+            let inClassInDB = await db.get(query3, userName);
 
             // Santitizing the data into workable form
             let currentCoursesJSONString = inClassInDB.currentCourses;
@@ -199,11 +225,12 @@ app.post("/enrollCourse", async function(req, res) {
                * Check each day the to be enrolled course takes places against logged in user
                * current course days
                */
-              for(let j = 0; i < selectedCourseDaysSplit.length; i += 1) {
-                if (currentCourseDaysSplit.includes(selectedCourseDaysSplit[i])) {
-                  // Checking if two schedules overlap
+              for(let j = 0; j < selectedCourseDaysSplit.length; j += 1) {
+                if (currentCourseDaysSplit.includes(selectedCourseDaysSplit[j])) {
+                  // Checking if two times on the same day overlap
                   conflictInSchedule = timesOverlap(selectedCourseTimes, currentCourseTimes);
                   if (conflictInSchedule) {
+                    // Exit both loops since conflict has been found
                     i = selectedCourseDaysSplit.length;
                     j = currentCourseKeyArr.length;
                     res.type("text").status(USER_ERROR_CODE)
@@ -217,10 +244,29 @@ app.post("/enrollCourse", async function(req, res) {
             if (!conflictInSchedule) {
               /**
                * 1.) add the class as an information a key value pair into current courses schedule
-               * 2.) Update the backend file with new course schedule
+               *    (DONE)
+               * 2.) Update the backend file with new course schedule (DONE)
+               * 3.) Send back unique code (STILL DO)
               */
               res.text("text").status(SUCCESS_CODE)
                 .send("Successfully added course");
+
+              // Adding new key class into course list
+              currentCoursesJSOB.className = { date: toBeEnrolledCourseDate,
+                                               subject: classInfo.subject,
+                                               description: classInfo.description
+                                              };
+              let updatedCurrentCoursesString = JSON.stringify(currentCoursesJSOB);
+
+
+              // Update back course schedule in backend now
+            let updateCourseQuery = "UPDATE userCourses SET currentCourses = " +
+                                    updatedCurrentCoursesString + " WHERE username = ?;";
+
+            // Updated the query (Remove this later)
+            let userCoursesUpdated = await db.get(updateCourseQuery, userName);
+
+
             }
           } else {
             res.type("text").status(USER_ERROR_CODE)
@@ -315,6 +361,7 @@ function parseTimeRange(timeRange) {
  */
 function timesOverlap(range1, range2) {
   // Parse the first time range into start and end times in minutes since midnight
+  // An object
   const { start: start1, end: end1 } = parseTimeRange(range1);
   // Parse the second time range into start and end times in minutes since midnight
   const { start: start2, end: end2 } = parseTimeRange(range2);
