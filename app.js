@@ -145,18 +145,15 @@ app.get("/itemDetails/:className", async function(req, res) {
 
 // Feature #4
 app.post("/enrollCourse", async function(req, res) {
-  console.log("Inside");
   // These are the two parameters to the form body object
   let userName = req.body.userName;
   let className = req.body.className;
   if(userName) {
-
     // Checking the login status
     let query = "SELECT loginStatus FROM login WHERE username = ?;";
     try {
       let db = await getDBConnection();
       let result = await db.get(query, userName);
-
       // Extracting the text (true / false)
       let isUserLogin = result.loginStatus;
 
@@ -175,7 +172,7 @@ app.post("/enrollCourse", async function(req, res) {
         // Note that classname is guranteed to be filled as client picks a class to make a request
         let query2 = "SELECT * FROM classes WHERE name = ?;";
         let classInfo = await db.get(query2, className);
-        if(classSeats !== null) {
+        if(classInfo !== undefined) {
 
           // The class does exist so now check its capacity, the date is grabbed to be used later
           let totalSeatsVal = classInfo.availableSeats;
@@ -204,12 +201,19 @@ app.post("/enrollCourse", async function(req, res) {
             // A array of keys to access each course in the users schedule
             let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
 
+            console.log("Before the date optimization check");
             // Check all the dates of the object
             let conflictInSchedule = false;
             for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
 
+              console.log("before checking the date value");
+              console.log(currentCoursesJSOB);
+              console.log(currentCourseKeyArr[i]);
+
               // Accessing the nested date value inside of the current courses date object
               let currentCourseDateEncode = currentCoursesJSOB.currentCourseKeyArr[i].date;
+
+              console.log("After the valid processing of current JSOB courses");
 
               // Split on double space which results in the time and days
               let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
@@ -224,6 +228,8 @@ app.post("/enrollCourse", async function(req, res) {
               // Splitting individual dates among each other
               let selectedCourseDaysSplit = selectedCourseDays.split(" ");
               let currentCourseDaysSplit = currentCourseDays.split(" ");
+
+              console.log("After santizing yourself");
 
 
               /**
