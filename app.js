@@ -14,7 +14,8 @@ const DEFAULT_PORT = 8000;
 let confirmationCodes = new Set();
 
 /**
- * Going to be an array of JS objects that represent a key value pairing between
+ * Going to be an array of JS objects that represent a key value pairing between transactions and
+ * a users current courses
  *
  */
 let courseHistory = [];
@@ -173,9 +174,6 @@ app.post("/enrollCourse", async function(req, res) {
                                               "subject": "English",
                                               "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
                                             };
-  let jsonString = JSON.stringify(obj);
-  console.log(jsonString);
-  console.log("before string");
 
 
   // These are the two parameters to the form body object
@@ -217,9 +215,15 @@ app.post("/enrollCourse", async function(req, res) {
 
             // The student can enroll meets the space requirements so now check schedule conflict
 
-            // Getting users JSON String currentCourses from database
-            let query3 = "SELECT currentCourses FROM userCourses WHERE username = ?;";
-            let inClassInDB = await db.get(query3, userName);
+            /**
+             * Getting an array of all the courses that the user is currently taking as a value of
+             * attrubute name
+             */
+            let query3 = "SELECT c.name FROM userCourses u, classes c WHERE " +
+                          "c.name = u.takingCourse AND username = ?;";
+            let classResult = await db.all(query3, userName);
+
+            let keyArray =
 
             // Santitizing the data into workable form
             let currentCoursesJSONString = inClassInDB.currentCourses;
