@@ -11,7 +11,7 @@ const SUCCESS_CODE = 200;
 const SERVER_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
 const DEFAULT_PORT = 8000;
-let conformationCodes = new Set();
+let confirmationCodes = new Set();
 
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true})); // built-in middleware
@@ -150,24 +150,13 @@ app.get("/itemDetails/:className", async function(req, res) {
 
 // Feature #4
 app.post("/enrollCourse", async function(req, res) {
-  /**
-   * 1. Figure out if user is logged in (DONE)
-   *
-   * 2. If so , check the clients request to add a class is successful (This is distingushed by
-   *    whether or not the class is at maximum capacity or this class conflicts with a users
-   *    schedule (to do this you must search the users current courses value)
-   *
-   * 3. An unique 6 digit combo is created if successful is reached
-   *
-   * 4. update the server with course enrollment
-   *
-   * 5. send back the code
-   */
 
   // These are the two parameters to the form body object
   let userName = req.body.userName;
   let className = req.body.className;
   if(userName) {
+
+    // Checking the login status
     let query = "SELECT loginStatus FROM login WHERE username = ?;";
     try {
       let db = await getDBConnection();
@@ -184,23 +173,28 @@ app.post("/enrollCourse", async function(req, res) {
          * 2.) Is there capacity
          *
          * 3.) does it conflict with users schedule
+         *
+         * 4.) Lastly does the user already have it in their schedule
          */
 
         // Note that classname is guranteed to be filled as client picks a class to make a request
         let query2 = "SELECT * FROM classes WHERE name = ?;";
         let classInfo = await db.get(query2, className);
         if(classSeats !== null) {
-          // The class does exist so now check its capacity
+
+          // The class does exist so now check its capacity, the date is grabbed to be used later
           let totalSeatsVal = classInfo.availableSeats;
           let toBeEnrolledCourseDate = classInfo.date;
+
+          // Checking if space availability is valid
           if(totalSeatsVal > 0) {
 
-            // Update back avaibleseats count now
+            // Updating the database available seat count now
             let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
                                   " WHERE name = ?;";
-            let updateDBSeatCount = await db.get(updateSeatCount, className);
+            let updateDBSeatCount = await db.run(updateSeatCount, className);
 
-            // No need to use the variable (look later to remove it)
+            // No need to store metadata into a variable (look later to remove it)
 
             // The student can enroll meets the space requirements so now check schedule conflict
 
@@ -211,12 +205,16 @@ app.post("/enrollCourse", async function(req, res) {
             // Santitizing the data into workable form
             let currentCoursesJSONString = inClassInDB.currentCourses;
             let currentCoursesJSOB = JSON.parse(currentCoursesJSONString);
+
+            // A array of keys to access each course in the users schedule
             let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
 
             // Check all the dates of the object
             let conflictInSchedule = false;
             for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
-              let currentCourseDateEncode = key.date;
+
+              // Accessing the nested date value inside of the current courses date object
+              let currentCourseDateEncode = currentCoursesJSOB.currentCourseKeyArr[i].date;
 
               // Split on double space which results in the time and days
               let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
@@ -252,52 +250,80 @@ app.post("/enrollCourse", async function(req, res) {
               }
             }
 
-            // No over lap takes place so add course to user course schedule
+            /**
+             * No over lap takes place therefore the following code function is to add a course to
+             * users schedule
+             */
             if (!conflictInSchedule) {
-              /**
-               * 1.) add the class as an information a key value pair into current courses schedule
-               *    (DONE)
-               * 2.) Update the backend file with new course schedule (DONE)
-               * 3.) Send back unique code (STILL DO) and save current set of classes
-              */
 
               // Adding new key class into course list
-              currentCoursesJSOB.className = { date: toBeEnrolledCourseDate,
-                                               subject: classInfo.subject,
-                                               description: classInfo.description
+              currentCoursesJSOB.className = { "date": toBeEnrolledCourseDate,
+                                               "subject": classInfo.subject,
+                                               "description": classInfo.description
                                               };
               let updatedCurrentCoursesString = JSON.stringify(currentCoursesJSOB);
-
 
               // Update back course schedule in backend now
             let updateCourseQuery = "UPDATE userCourses SET currentCourses = " +
                                     updatedCurrentCoursesString + " WHERE username = ?;";
 
             // Updated the query (Remove this later)
-            let userCoursesUpdated = await db.get(updateCourseQuery, userName);
+            let userCoursesUpdated = await db.run(updateCourseQuery, userName);
 
-            // Create random 6 digitsCode
+            // Create random 6 digit Code
             /**
-             * create random 6 digit code ( generate number from 33 to 122 )
-             * check if set has it
-             * if not then add it set
+             * create random 6 digit code ( generate numbers from 33 to 122 ) (DONE)
+             * check if set has it (DONE)
+             * if it does not then add it to the set (DONE)
              *
-             * if so try again
+             * if so try again (DONE)
              *
              * add new code and current courses to users course history array (may be long)
              *
              * then push code to course history array
              */
-
             let newCode = "";
+            let invalidCode = true;
 
+            while (invalidCode) {
+              newCode = "";
+              for(let i = 0; i < 6; i += 1) {
+                // Picking a random ascii value from dec 33 to 126
+                let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
+                let randomAsciiVal = String.fromCharCode(randomNumInRange);
+                newCode += randomAsciiVal;
+              }
 
+              // Valid check
+              if(!(confirmationCodes.has(newCode))) {
+                confirmationCodes.add(newCode);
+                invalidCode = false;
+              }
+            }
 
+            // Now update the current course history
+            let courseHistoryQuery = "SELECT courseHistory FROM userCourses WHERE username = ?;";
+            let courseHistoryJS = await db.get(courseHistoryQuery, userName);
+
+            // Santitzing the data
+            let courseHistoryArrString = courseHistoryJS.courseHistory;
+            let courseHistoryArr = JSON.parse(courseHistoryArrString);
+
+            // adding new "transaction to the js object"
+            let newTransactionKey = "" + newCode;
+            let newTransactionStamp = {[newTransactionKey]: currentCoursesJSOB }
+            courseHistoryArr.push(newTransactionStamp);
+
+            // Putting back the updated current courses into the database
+            let updatedCourseHistoryString = JSON.stringify(courseHistoryArr);
+            let updateDBCourseHistoryQuery = "UPDATE userCourses SET courseHistory =  " +
+                                              updatedCourseHistoryString + " WHERE username = ?";
+            let resultOfCourseHistoryUpdate = await db.run(updateDBCourseHistoryQuery, userName);
+
+            await db.close;
             // Append confirmation code
             res.text("text").status(SUCCESS_CODE)
-                .send("Successfully added course");
-
-
+                .send("Successfully added course, this is the confirmation code: " + newCode);
 
 
             }
