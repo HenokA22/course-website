@@ -13,6 +13,12 @@ const USER_ERROR_CODE = 400;
 const DEFAULT_PORT = 8000;
 let confirmationCodes = new Set();
 
+/**
+ * Going to be an array of JS objects that represent a key value pairing between
+ *
+ */
+let courseHistory = [];
+
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true})); // built-in middleware
 // for application/json
@@ -24,6 +30,7 @@ let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
                                               "subject": "English",
                                               "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
                                             };
+
 
 /**
  * NOTES ON STRUCTURE of various attributes in the database
@@ -167,6 +174,8 @@ app.post("/enrollCourse", async function(req, res) {
                                               "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
                                             };
   let jsonString = JSON.stringify(obj);
+  console.log(jsonString);
+  console.log("before string");
 
 
   // These are the two parameters to the form body object
