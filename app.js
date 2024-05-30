@@ -33,6 +33,18 @@ app.use(multer().none()); // requires the "multer" module
  *                                            }
  * }
  *
+ * {
+ *  currentCourses:
+ *
+ *  cse154: {
+ *    date:
+ *    subject:
+ *    description:
+ *    seats:
+ *  }
+ *
+ * }
+ *
  *
  *
  * The date field in format of D D D  x:xx-x:xx period(am/pm)
@@ -151,6 +163,7 @@ app.post("/enrollCourse", async function(req, res) {
   if(userName) {
     // Checking the login status
     let query = "SELECT loginStatus FROM login WHERE username = ?;";
+    // have a way to denote whether or not the user is signed in.
     try {
       let db = await getDBConnection();
       let result = await db.get(query, userName);
@@ -181,13 +194,6 @@ app.post("/enrollCourse", async function(req, res) {
           // Checking if space availability is valid
           if(totalSeatsVal > 0) {
 
-            // Updating the database available seat count now
-            let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
-                                  " WHERE name = ?;";
-            let updateDBSeatCount = await db.run(updateSeatCount, className);
-
-            // No need to store metadata into a variable (look later to remove it)
-
             // The student can enroll meets the space requirements so now check schedule conflict
 
             // Getting users JSON String currentCourses from database
@@ -199,6 +205,9 @@ app.post("/enrollCourse", async function(req, res) {
             let currentCoursesJSOB = JSON.parse(currentCoursesJSONString);
 
             // A array of keys to access each course in the users schedule
+            // Keys are the class name
+
+            // Error here
             let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
 
             console.log("Before the date optimization check");
@@ -208,7 +217,8 @@ app.post("/enrollCourse", async function(req, res) {
 
               console.log("before checking the date value");
               console.log(currentCoursesJSOB);
-              console.log(currentCourseKeyArr[i]);
+              console.log(currentCourseKeyArr);
+              console.log(currentCourseKeyArr[i]); // Debugging from here
 
               // Accessing the nested date value inside of the current courses date object
               let currentCourseDateEncode = currentCoursesJSOB.currentCourseKeyArr[i].date;
@@ -216,6 +226,8 @@ app.post("/enrollCourse", async function(req, res) {
               console.log("After the valid processing of current JSOB courses");
 
               // Split on double space which results in the time and days
+              // check to see if .split on mutliple spaces will either count as one
+              // or two.
               let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
               let currentCourseDateSplit = currentCourseDateEncode.split("  ");
 
@@ -226,6 +238,9 @@ app.post("/enrollCourse", async function(req, res) {
               let currentCourseTimes = currentCourseDays[1];
 
               // Splitting individual dates among each other
+              // courseDays: [M, W, T] (users course)
+              // currentCourseDays: [T, W] (to be enrolled course)
+              //    - represents the entire history of users courses they've enrolled
               let selectedCourseDaysSplit = selectedCourseDays.split(" ");
               let currentCourseDaysSplit = currentCourseDays.split(" ");
 
@@ -237,6 +252,8 @@ app.post("/enrollCourse", async function(req, res) {
                * current course days
                */
               for(let j = 0; j < selectedCourseDaysSplit.length; j += 1) {
+                // compares for every day in the selectedCourse we want to enroll
+                // make sure if one of the days is equal
                 if (currentCourseDaysSplit.includes(selectedCourseDaysSplit[j])) {
                   // Checking if two times on the same day overlap
                   conflictInSchedule = timesOverlap(selectedCourseTimes, currentCourseTimes);
@@ -259,9 +276,11 @@ app.post("/enrollCourse", async function(req, res) {
               /**
                * Last check, does the user already have this class in their course history
                */
+               // can't you do a query?
+               // "[hi, casted, string]"
+               // call parse-> [hi, casted, string]
               let addingAnNewClass = true;
               for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
-
                 // Check for if a class that this user is taking matches the requested class to add
                 if (currentCourseKeyArr[i] === className) {
                   addingAnNewClass = false;
@@ -271,6 +290,15 @@ app.post("/enrollCourse", async function(req, res) {
 
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
+
+                 // move this around
+                 // Updating the database available seat count now
+                let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
+                                      " WHERE name = ?;";
+                let updateDBSeatCount = await db.run(updateSeatCount, className);
+
+                // No need to store metadata into a variable (look later to remove it)
+
                 // Adding new key (class) into current course object
                 currentCoursesJSOB.className = { "date": toBeEnrolledCourseDate,
                               "subject": classInfo.subject,
