@@ -223,7 +223,6 @@ app.post("/enrollCourse", async function(req, res) {
                           "c.name = u.takingCourse AND username = ?;";
             let classResult = await db.all(query3, userName);
 
-            let keyArray =
 
             // Santitizing the data into workable form
             let currentCoursesJSONString = inClassInDB.currentCourses;

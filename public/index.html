@@ -51,6 +51,7 @@
           <strong>Search:</strong>
         </label>
         <input type="text" placeholder="Search" id="course-input">
+        <button id="search-button" class="hidden">Search</button>
       </div>
     </section>
     <section id="main-body">
@@ -61,7 +62,9 @@
         ***
       -->
       <article id="filter-container">
-        <h1>Filter:</h1>
+        <nav>
+          <h1>Filter:</h1>
+        </nav>
         <p>Course level:</p>
         <form>
           <input type="checkbox" id="course100" name="course100">
@@ -83,14 +86,17 @@
         ***
       -->
       <article id="course-list">
-        <h1>Courses</h1>
+        <nav>
+          <h1>Courses</h1>
+        </nav>
         <article class="course">
           <!--
             ***
             List of courses here soon to come
             ***
           -->
-          <p>**TODO POPULATE COURSES USING FLEX**</p>
+          <section id="classes">
+          </section>
         </article>
       </article>
     </section>
