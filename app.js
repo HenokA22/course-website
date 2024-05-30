@@ -255,77 +255,89 @@ app.post("/enrollCourse", async function(req, res) {
              * users schedule
              */
             if (!conflictInSchedule) {
+              /**
+               * Last check, does the user already have this class in their course history
+               */
+              let addingAnNewClass = true;
+              for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
 
-              // Adding new key class into course list
-              currentCoursesJSOB.className = { "date": toBeEnrolledCourseDate,
-                                               "subject": classInfo.subject,
-                                               "description": classInfo.description
-                                              };
-              let updatedCurrentCoursesString = JSON.stringify(currentCoursesJSOB);
-
-              // Update back course schedule in backend now
-            let updateCourseQuery = "UPDATE userCourses SET currentCourses = " +
-                                    updatedCurrentCoursesString + " WHERE username = ?;";
-
-            // Updated the query (Remove this later)
-            let userCoursesUpdated = await db.run(updateCourseQuery, userName);
-
-            // Create random 6 digit Code
-            /**
-             * create random 6 digit code ( generate numbers from 33 to 122 ) (DONE)
-             * check if set has it (DONE)
-             * if it does not then add it to the set (DONE)
-             *
-             * if so try again (DONE)
-             *
-             * add new code and current courses to users course history array (may be long)
-             *
-             * then push code to course history array
-             */
-            let newCode = "";
-            let invalidCode = true;
-
-            while (invalidCode) {
-              newCode = "";
-              for(let i = 0; i < 6; i += 1) {
-                // Picking a random ascii value from dec 33 to 126
-                let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
-                let randomAsciiVal = String.fromCharCode(randomNumInRange);
-                newCode += randomAsciiVal;
+                // Check for if a class that this user is taking matches the requested class to add
+                if (currentCourseKeyArr[i] === className) {
+                  addingAnNewClass = false;
+                  i = currentCourseKeyArr.length;
+                }
               }
 
-              // Valid check
-              if(!(confirmationCodes.has(newCode))) {
-                confirmationCodes.add(newCode);
-                invalidCode = false;
+              if (addingAnNewClass) { // (Check here now)
+                // Adding new key class into course list
+                currentCoursesJSOB.className = { "date": toBeEnrolledCourseDate,
+                              "subject": classInfo.subject,
+                              "description": classInfo.description
+                            };
+                let updatedCurrentCoursesString = JSON.stringify(currentCoursesJSOB);
+
+                // Update back course schedule in backend now
+                let updateCourseQuery = "UPDATE userCourses SET currentCourses = " +
+                  updatedCurrentCoursesString + " WHERE username = ?;";
+
+                // Updated the query (Remove this later)
+                let userCoursesUpdated = await db.run(updateCourseQuery, userName);
+
+                // Create random 6 digit Code
+                /**
+                * create random 6 digit code ( generate numbers from 33 to 122 ) (DONE)
+                * check if set has it (DONE)
+                * if it does not then add it to the set (DONE)
+                *
+                * if so try again (DONE)
+                *
+                * add new code and current courses to users course history array (may be long)
+                *
+                * then push code to course history array
+                */
+                let newCode = "";
+                let invalidCode = true;
+
+              while (invalidCode) {
+                newCode = "";
+                for (let i = 0; i < 6; i += 1) {
+                  // Picking a random ascii value from dec 33 to 126
+                  let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
+                  let randomAsciiVal = String.fromCharCode(randomNumInRange);
+                  newCode += randomAsciiVal;
+                }
+
+                // Valid check
+                if (!(confirmationCodes.has(newCode))) {
+                  confirmationCodes.add(newCode);
+                  invalidCode = false;
+                }
               }
-            }
 
-            // Now update the current course history
-            let courseHistoryQuery = "SELECT courseHistory FROM userCourses WHERE username = ?;";
-            let courseHistoryJS = await db.get(courseHistoryQuery, userName);
+              // Now update the current course history
+              let courseHistoryQuery = "SELECT courseHistory FROM userCourses WHERE username = ?;";
+              let courseHistoryJS = await db.get(courseHistoryQuery, userName);
 
-            // Santitzing the data
-            let courseHistoryArrString = courseHistoryJS.courseHistory;
-            let courseHistoryArr = JSON.parse(courseHistoryArrString);
+              // Santitzing the data
+              let courseHistoryArrString = courseHistoryJS.courseHistory;
+              let courseHistoryArr = JSON.parse(courseHistoryArrString);
 
-            // adding new "transaction to the js object"
-            let newTransactionKey = "" + newCode;
-            let newTransactionStamp = {[newTransactionKey]: currentCoursesJSOB }
-            courseHistoryArr.push(newTransactionStamp);
+              // adding new "transaction to the js object"
+              let newTransactionKey = "" + newCode;
+              let newTransactionStamp = {[newTransactionKey]: currentCoursesJSOB }
+              courseHistoryArr.push(newTransactionStamp);
 
-            // Putting back the updated current courses into the database
-            let updatedCourseHistoryString = JSON.stringify(courseHistoryArr);
-            let updateDBCourseHistoryQuery = "UPDATE userCourses SET courseHistory =  " +
-                                              updatedCourseHistoryString + " WHERE username = ?";
-            let resultOfCourseHistoryUpdate = await db.run(updateDBCourseHistoryQuery, userName);
+              // Putting back the updated current courses into the database
+              let updatedCourseHistoryString = JSON.stringify(courseHistoryArr);
+              let updateDBCourseHistoryQuery = "UPDATE userCourses SET courseHistory =  " +
+                          updatedCourseHistoryString + " WHERE username = ?";
+              let resultOfCourseHistoryUpdate = await db.run(updateDBCourseHistoryQuery, userName);
 
-            await db.close;
-            // Append confirmation code
-            res.text("text").status(SUCCESS_CODE)
-                .send("Successfully added course, this is the confirmation code: " + newCode);
-
-
+              await db.close;
+              // Append confirmation code
+              res.text("text").status(SUCCESS_CODE)
+              .send("Successfully added course, this is the confirmation code: " + newCode);
+              }
             }
           } else {
             res.type("text").status(USER_ERROR_CODE)
