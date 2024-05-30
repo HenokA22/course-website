@@ -20,6 +20,11 @@ app.use(express.json()); // built-in middleware
 // for multipart/form-data (required with FormData)
 app.use(multer().none()); // requires the "multer" module
 
+let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
+                                              "subject": "English",
+                                              "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
+                                            };
+
 /**
  * NOTES ON STRUCTURE of various attributes in the database
  * The of the value of a currentCourse field in the data base should be an array of json objects with it key the name of class on the users schedule and the value another json object holding infromation about the key
@@ -157,6 +162,14 @@ app.get("/itemDetails/:className", async function(req, res) {
 
 // Feature #4
 app.post("/enrollCourse", async function(req, res) {
+  let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
+                                              "subject": "English",
+                                              "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
+                                            };
+  let jsonString = JSON.stringify(obj);
+  console.log(jsonString);
+
+
   // These are the two parameters to the form body object
   let userName = req.body.userName;
   let className = req.body.className;
@@ -207,10 +220,14 @@ app.post("/enrollCourse", async function(req, res) {
             // A array of keys to access each course in the users schedule
             // Keys are the class name
 
-            // Error here
+
+            // The JSON string check isn't working properely
+            console.log(isObject(currentCoursesJSOB));
+            console.log(currentCoursesJSOB);
+            // Error here ( how to print the keys of a JS object)
             let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
 
-            console.log("Before the date optimization check");
+            console.log(currentCourseKeyArr);
             // Check all the dates of the object
             let conflictInSchedule = false;
             for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
@@ -406,6 +423,10 @@ app.get("/viewTransaction", async function(req, res) {
    * 2. Grab (transaction history ) schedule history from database?
    */
 });
+
+function isObject(value) {
+  return value !== null && typeof value === 'object';
+}
 
 /**
  * Converts a 12-hour format time (e.g., "9:30 am") to the number of minutes since midnight.
