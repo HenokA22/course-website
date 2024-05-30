@@ -168,7 +168,7 @@ app.get("/itemDetails/:className", async function(req, res) {
   }
 });
 
-// Feature #4
+// Feature #4 (Testing is needed to check if SQL joins and new queries are working correctly)
 app.post("/enrollCourse", async function(req, res) {
   let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
                                               "subject": "English",
@@ -223,42 +223,26 @@ app.post("/enrollCourse", async function(req, res) {
                           "c.name = u.takingCourse AND username = ?;";
             let classResult = await db.all(query3, userName);
 
+            // An array of classes that the user is currently taking
+            let currentCourses = [];
 
-            // Santitizing the data into workable form
-            let currentCoursesJSONString = inClassInDB.currentCourses;
-            console.log(currentCoursesJSONString);
-            let currentCoursesJSOB = JSON.parse(currentCoursesJSONString);
+            // Transfering db.all result -> values of objects inside of array
+            for (let i = 0; i < classResult.length; i += 1) {
+              let oneMatch = classResult[i];
+              currentCourses.push(oneMatch.takingCourse);
+            }
 
-            // A array of keys to access each course in the users schedule
-            // Keys are the class name
-
-
-            // The JSON string check isn't working properely
-
-            console.log(currentCoursesJSOB["Intermediate Expository Writing"]);
-            // Error here ( how to print the keys of a JS object)
-            let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
-
-            //console.log(currentCourseKeyArr);
-            // Check all the dates of the object
+            // Check all the dates of each class
             let conflictInSchedule = false;
-            for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
-              /**
-              console.log("before checking the date value");
-              console.log(currentCoursesJSOB);
-              console.log(currentCourseKeyArr);
-              console.log(currentCourseKeyArr[i]); // Debugging from here */
+            for (let i = 0; i < currentCourse.length; i += 1) {
 
-              // Accessing the nested date value inside of the current courses date object
-              let currentCourseDateEncode = currentCoursesJSOB.currentCourseKeyArr[i].date;
+              // Accessing the nested date value from result of .get()
+              let dateQuery = "SELECT date FROM classes WHERE name = " + currentCourses[i];
+              let dateResultOB = await db.get(dateQuery);
+              let date = dateResultOB.date;
 
-              console.log("After the valid processing of current JSOB courses");
-
-              // Split on double space which results in the time and days
-              // check to see if .split on mutliple spaces will either count as one
-              // or two.
               let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
-              let currentCourseDateSplit = currentCourseDateEncode.split("  ");
+              let currentCourseDateSplit = date.split("  ");
 
               // Storing days and times for both dates to compare
               let selectedCourseDays = selectedCourseDateSplit[0];
@@ -309,11 +293,11 @@ app.post("/enrollCourse", async function(req, res) {
                // "[hi, casted, string]"
                // call parse-> [hi, casted, string]
               let addingAnNewClass = true;
-              for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
+              for (let i = 0; i < currentCourses.length; i += 1) {
                 // Check for if a class that this user is taking matches the requested class to add
-                if (currentCourseKeyArr[i] === className) {
+                if (currentCourses[i] === className) {
                   addingAnNewClass = false;
-                  i = currentCourseKeyArr.length;
+                  i = currentCourses.length;
                 }
               }
 
@@ -328,19 +312,19 @@ app.post("/enrollCourse", async function(req, res) {
 
                 // No need to store metadata into a variable (look later to remove it)
 
-                // Adding new key (class) into current course object
-                currentCoursesJSOB.className = { "date": toBeEnrolledCourseDate,
-                              "subject": classInfo.subject,
-                              "description": classInfo.description
-                            };
-                let updatedCurrentCoursesString = JSON.stringify(currentCoursesJSOB);
 
-                // Updating the course schedule in backend now
-                let updateCourseQuery = "UPDATE userCourses SET currentCourses = " +
-                  updatedCurrentCoursesString + " WHERE username = ?;";
+                // Insert the course schedule in backend now
+                // First get major value from database
+                let majorQuery = "SELECT major FROM userCourses WHERE username = ?";
+                let majorResult = await db.get(majorQuery, userName);
+                let userMajor = majorResult.major;
 
+                // Now updating the database to reflect all new course on the backend
+                let updateCourseQuery = "INSERT INTO userCourses(userName, takingCourse, major)" +
+                                        "VALUES (?, ?, ?);";
                 // Updated the query (Remove this later)
-                let userCoursesUpdated = await db.run(updateCourseQuery, userName);
+                let userCoursesUpdated = await db.run(updateCourseQuery,
+                                                      [userName, className, userMajor]);
 
 
                 // Creating the confirmation code below
@@ -365,23 +349,40 @@ app.post("/enrollCourse", async function(req, res) {
                 }
 
                 // Now update the current course history
-                let courseHistoryQuery = "SELECT courseHistory FROM userCourses WHERE username = ?";
-                let courseHistoryJS = await db.get(courseHistoryQuery, userName);
 
-                // Santitzing the data
-                let courseHistoryArrString = courseHistoryJS.courseHistory;
-                let courseHistoryArr = JSON.parse(courseHistoryArrString);
+                // Gather all the information for each course and add it courseHistory array
 
-                // adding new "transaction to the js object"
+                /**
+                 * 1.) gather the date, availableSeats, subject, description
+                 * 2.) put into an object
+                 * 3.) then attach that object as a key value pair in another object with the key
+                 *      as a name
+                 */
+
+
+                /**
+                 * Grabing information from each course the student take putting that into an object
+                 * Then applying then assembling that into a larger array that represents what the
+                 * student is currently taking.
+                 */
+                let studentClasses = [];
+                for (let i = 0; i < currentCourses.length; i += 1) {
+                  let classInfoQuery = "SELECT date, availableSeats, subject, description FROM " +
+                                    "userCourses WHERE name = " + currentCourses[i];
+                  let classInfoResult = await db.get(classInfoQuery);
+
+                  // Single course to add into course history
+                  let newCourseHistorySnapShot = {[currentCourse[i]]: classInfoResult};
+                  studentClasses.push(newCourseHistorySnapShot);
+                }
+
+                /**
+                 * adding new "transaction(adding a class) to be mapped to a user up to date
+                 * course schedule.
+                 */
                 let newTransactionKey = "" + newCode;
-                let newTransactionStamp = {[newTransactionKey]: currentCoursesJSOB }
-                courseHistoryArr.push(newTransactionStamp);
-
-                // Putting back the updated current courses into the database
-                let updatedCourseHistoryString = JSON.stringify(courseHistoryArr);
-                let updateDBCourseHistoryQuery = "UPDATE userCourses SET courseHistory =  " +
-                            updatedCourseHistoryString + " WHERE username = ?";
-                let resultOfCourseHistoryUpdate = await db.run(updateDBCourseHistoryQuery,userName);
+                let newTransactionStamp = {[newTransactionKey]:  studentClasses};
+                courseHistory.push(newTransactionStamp);
 
                 await db.close;
                 // Append confirmation code
