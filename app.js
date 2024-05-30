@@ -167,7 +167,6 @@ app.post("/enrollCourse", async function(req, res) {
                                               "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
                                             };
   let jsonString = JSON.stringify(obj);
-  console.log(jsonString);
 
 
   // These are the two parameters to the form body object
@@ -215,6 +214,7 @@ app.post("/enrollCourse", async function(req, res) {
 
             // Santitizing the data into workable form
             let currentCoursesJSONString = inClassInDB.currentCourses;
+            console.log(currentCoursesJSONString);
             let currentCoursesJSOB = JSON.parse(currentCoursesJSONString);
 
             // A array of keys to access each course in the users schedule
@@ -222,20 +222,20 @@ app.post("/enrollCourse", async function(req, res) {
 
 
             // The JSON string check isn't working properely
-            console.log(isObject(currentCoursesJSOB));
-            console.log(currentCoursesJSOB);
+
+            console.log(currentCoursesJSOB["Intermediate Expository Writing"]);
             // Error here ( how to print the keys of a JS object)
             let currentCourseKeyArr = Object.keys(currentCoursesJSOB);
 
-            console.log(currentCourseKeyArr);
+            //console.log(currentCourseKeyArr);
             // Check all the dates of the object
             let conflictInSchedule = false;
             for (let i = 0; i < currentCourseKeyArr.length; i += 1) {
-
+              /**
               console.log("before checking the date value");
               console.log(currentCoursesJSOB);
               console.log(currentCourseKeyArr);
-              console.log(currentCourseKeyArr[i]); // Debugging from here
+              console.log(currentCourseKeyArr[i]); // Debugging from here */
 
               // Accessing the nested date value inside of the current courses date object
               let currentCourseDateEncode = currentCoursesJSOB.currentCourseKeyArr[i].date;
