@@ -217,10 +217,10 @@ app.post("/enrollCourse", async function(req, res) {
 
             /**
              * Getting an array of all the courses that the user is currently taking as a value of
-             * attrubute name
+             * attribute name
              */
-            let query3 = "SELECT c.name FROM userCourses u, classes c WHERE " +
-                          "c.name = u.takingCourse AND username = ?;";
+            let query3 = "SELECT c.name FROM userCourses u JOIN classes c ON " +
+                          "c.name = u.takingCourse WHERE username = ?;";
             let classResult = await db.all(query3, userName);
 
             // An array of classes that the user is currently taking
@@ -229,16 +229,16 @@ app.post("/enrollCourse", async function(req, res) {
             // Transfering db.all result -> values of objects inside of array
             for (let i = 0; i < classResult.length; i += 1) {
               let oneMatch = classResult[i];
-              currentCourses.push(oneMatch.takingCourse);
+              currentCourses.push(oneMatch.name);
             }
 
             // Check all the dates of each class
             let conflictInSchedule = false;
-            for (let i = 0; i < currentCourse.length; i += 1) {
 
+            for (let i = 0; i < currentCourses.length; i += 1) {
               // Accessing the nested date value from result of .get()
-              let dateQuery = "SELECT date FROM classes WHERE name = " + currentCourses[i];
-              let dateResultOB = await db.get(dateQuery);
+              let dateQuery = "SELECT date FROM classes WHERE name = ?;"
+              let dateResultOB = await db.get(dateQuery, currentCourses[i]);
               let date = dateResultOB.date;
 
               let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
@@ -256,9 +256,6 @@ app.post("/enrollCourse", async function(req, res) {
               //    - represents the entire history of users courses they've enrolled
               let selectedCourseDaysSplit = selectedCourseDays.split(" ");
               let currentCourseDaysSplit = currentCourseDays.split(" ");
-
-              console.log("After santizing yourself");
-
 
               /**
                * Check each day the to be enrolled course takes places against logged in user
@@ -312,7 +309,6 @@ app.post("/enrollCourse", async function(req, res) {
 
                 // No need to store metadata into a variable (look later to remove it)
 
-
                 // Insert the course schedule in backend now
                 // First get major value from database
                 let majorQuery = "SELECT major FROM userCourses WHERE username = ?";
@@ -320,17 +316,16 @@ app.post("/enrollCourse", async function(req, res) {
                 let userMajor = majorResult.major;
 
                 // Now updating the database to reflect all new course on the backend
-                let updateCourseQuery = "INSERT INTO userCourses(userName, takingCourse, major)" +
-                                        "VALUES (?, ?, ?);";
-                // Updated the query (Remove this later)
-                let userCoursesUpdated = await db.run(updateCourseQuery,
-                                                      [userName, className, userMajor]);
+                console.log("hello");
+                let sql="INSERT INTO userCourses (username, takingCourse, major) VALUES (?, ?, ?);";
+                await db.run(sql, [userName, className, userMajor]);
 
-
+                console.log("After query");
                 // Creating the confirmation code below
                 let newCode = "";
                 let invalidCode = true;
 
+                console.log("After new class");
                 // While loop checks if the code is invalid or not
                 while (invalidCode) {
                   newCode = "";
