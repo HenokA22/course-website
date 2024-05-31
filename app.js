@@ -240,6 +240,8 @@ app.post("/enrollCourse", async function(req, res) {
 
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
+                // lines 243 to lines 283 need to be factored out to a function
+
                  // move this around
                  // Updating the database available seat count now
                 let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
@@ -258,26 +260,8 @@ app.post("/enrollCourse", async function(req, res) {
                 let sql="INSERT INTO userCourses (username, takingCourse, major) VALUES (?, ?, ?);";
                 await db.run(sql, [userName, className, userMajor]);
 
-                // Creating the confirmation code below
-                let newCode = "";
-                let invalidCode = true;
-
-                // While loop checks if the code is invalid or not
-                while (invalidCode) {
-                  newCode = "";
-                  for (let i = 0; i < 6; i += 1) {
-                    // Picking a random ascii value from dec 33 to 126
-                    let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
-                    let randomAsciiVal = String.fromCharCode(randomNumInRange);
-                    newCode += randomAsciiVal;
-                  }
-
-                  // Valid check
-                  if (!(confirmationCodes.has(newCode))) {
-                    confirmationCodes.add(newCode);
-                    invalidCode = false;
-                  }
-                }
+                // creates the code
+                let newCode = createCode();
 
                 // Gather all the information for each course and add it courseHistory array
 
@@ -331,6 +315,35 @@ app.post("/enrollCourse", async function(req, res) {
       .send("No username is specified. Please login in before trying to adding a class")
   }
 });
+
+/**
+ * Creates a random 6 digits code to distigush a new class enrollement for a student
+ * @returns A string that is the code itself
+ */
+function createCode() {
+  // Creating the confirmation code below
+  let newCode = "";
+  let invalidCode = true;
+
+  // While loop checks if the code is invalid or not
+  while (invalidCode) {
+    newCode = "";
+    for (let i = 0; i < 6; i += 1) {
+      // Picking a random ascii value from dec 33 to 126
+      let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
+      let randomAsciiVal = String.fromCharCode(randomNumInRange);
+      newCode += randomAsciiVal;
+    }
+
+    // Valid check
+    if (!(confirmationCodes.has(newCode))) {
+      confirmationCodes.add(newCode);
+      invalidCode = false;
+    }
+  }
+
+  return newCode;
+}
 
 /**
  * Retrieves information about each course the student is currently taking.
