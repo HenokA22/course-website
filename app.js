@@ -107,8 +107,6 @@ app.post("/login", async function(req, res) {
          */
         let updateQuery = "UPDATE login SET loginStatus = ? WHERE username = ? AND password = ?;";
         await db.run(updateQuery, ["true", username, password]);
-        res.type("text").status(SUCCESS_CODE)
-          .send("Login successful");
 
         // Saving username to browser if user has said so
         if(savePassWord) {
@@ -119,6 +117,10 @@ app.post("/login", async function(req, res) {
           // Saving username in localstorage based on user id
           window.localStorage.setItem("User " + userID + " username", username);
         }
+        await closeDbConnection(db);
+
+        res.type("text").status(SUCCESS_CODE)
+          .send("Login successful");
       } else {
         res.type("text").status(USER_ERROR_CODE)
           .send("Login failed. Invalid user.");
@@ -170,11 +172,6 @@ app.get("/itemDetails/:className", async function(req, res) {
 
 // Feature #4 (Testing is needed to check if SQL joins and new queries are working correctly)
 app.post("/enrollCourse", async function(req, res) {
-  let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
-                                              "subject": "English",
-                                              "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
-                                            };
-
 
   // These are the two parameters to the form body object
   let userName = req.body.userName;
@@ -186,20 +183,11 @@ app.post("/enrollCourse", async function(req, res) {
     try {
       let db = await getDBConnection();
       let result = await db.get(query, userName);
+
       // Extracting the text (true / false)
       let isUserLogin = result.loginStatus;
 
       if(isUserLogin === "true") {
-        /**
-         * Check if user can add class
-         * 1.) Does this class exists
-         *
-         * 2.) Is there capacity
-         *
-         * 3.) does it conflict with users schedule
-         *
-         * 4.) Lastly does the user already have it in their schedule
-         */
 
         // Note that classname is guranteed to be filled as client picks a class to make a request
         let query2 = "SELECT * FROM classes WHERE name = ?;";
@@ -214,11 +202,6 @@ app.post("/enrollCourse", async function(req, res) {
           if(totalSeatsVal > 0) {
 
             // The student can enroll meets the space requirements so now check schedule conflict
-
-            /**
-             * Getting an array of all the courses that the user is currently taking as a value of
-             * attribute name
-             */
             let query3 = "SELECT c.name FROM userCourses u JOIN classes c ON " +
                           "c.name = u.takingCourse WHERE username = ?;";
             let classResult = await db.all(query3, userName);
@@ -233,56 +216,13 @@ app.post("/enrollCourse", async function(req, res) {
             }
 
             // Check all the dates of each class
-            let conflictInSchedule = false;
-
-            for (let i = 0; i < currentCourses.length; i += 1) {
-              // Accessing the nested date value from result of .get()
-              let dateQuery = "SELECT date FROM classes WHERE name = ?;"
-              let dateResultOB = await db.get(dateQuery, currentCourses[i]);
-              let date = dateResultOB.date;
-
-              let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
-              let currentCourseDateSplit = date.split("  ");
-
-              // Storing days and times for both dates to compare
-              let selectedCourseDays = selectedCourseDateSplit[0];
-              let selectedCourseTimes = selectedCourseDateSplit[1];
-              let currentCourseDays = currentCourseDateSplit[0];
-              let currentCourseTimes = currentCourseDays[1];
-
-              // Splitting individual dates among each other
-              // courseDays: [M, W, T] (users course)
-              // currentCourseDays: [T, W] (to be enrolled course)
-              //    - represents the entire history of users courses they've enrolled
-              let selectedCourseDaysSplit = selectedCourseDays.split(" ");
-              let currentCourseDaysSplit = currentCourseDays.split(" ");
-
-              /**
-               * Check each day the to be enrolled course takes places against logged in user
-               * current course days
-               */
-              for(let j = 0; j < selectedCourseDaysSplit.length; j += 1) {
-                // compares for every day in the selectedCourse we want to enroll
-                // make sure if one of the days is equal
-                if (currentCourseDaysSplit.includes(selectedCourseDaysSplit[j])) {
-                  // Checking if two times on the same day overlap
-                  conflictInSchedule = timesOverlap(selectedCourseTimes, currentCourseTimes);
-                  if (conflictInSchedule) {
-                    // Exit both loops since conflict has been found
-                    i = selectedCourseDaysSplit.length;
-                    j = currentCourseKeyArr.length;
-                    res.type("text").status(USER_ERROR_CODE)
-                      .send("A conflict in your schedule has occured");
-                  }
-                }
-              }
-            }
+            let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
 
             /**
              * No over lap takes place therefore the following code function is to add a course to
              * users schedule
              */
-            if (!conflictInSchedule) {
+            if (!conflictInScheduleResult) {
               /**
                * Last check, does the user already have this class in their course history
                */
@@ -300,32 +240,28 @@ app.post("/enrollCourse", async function(req, res) {
 
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
-
                  // move this around
                  // Updating the database available seat count now
                 let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
                                       " WHERE name = ?;";
-                let updateDBSeatCount = await db.run(updateSeatCount, className);
+                await db.run(updateSeatCount, className);
 
                 // No need to store metadata into a variable (look later to remove it)
 
                 // Insert the course schedule in backend now
                 // First get major value from database
-                let majorQuery = "SELECT major FROM userCourses WHERE username = ?";
+                let majorQuery = "SELECT major FROM userCourses WHERE username = ?;";
                 let majorResult = await db.get(majorQuery, userName);
                 let userMajor = majorResult.major;
 
                 // Now updating the database to reflect all new course on the backend
-                console.log("hello");
                 let sql="INSERT INTO userCourses (username, takingCourse, major) VALUES (?, ?, ?);";
                 await db.run(sql, [userName, className, userMajor]);
 
-                console.log("After query");
                 // Creating the confirmation code below
                 let newCode = "";
                 let invalidCode = true;
 
-                console.log("After new class");
                 // While loop checks if the code is invalid or not
                 while (invalidCode) {
                   newCode = "";
@@ -343,33 +279,14 @@ app.post("/enrollCourse", async function(req, res) {
                   }
                 }
 
-                // Now update the current course history
-
                 // Gather all the information for each course and add it courseHistory array
-
-                /**
-                 * 1.) gather the date, availableSeats, subject, description
-                 * 2.) put into an object
-                 * 3.) then attach that object as a key value pair in another object with the key
-                 *      as a name
-                 */
-
 
                 /**
                  * Grabing information from each course the student take putting that into an object
                  * Then applying then assembling that into a larger array that represents what the
                  * student is currently taking.
                  */
-                let studentClasses = [];
-                for (let i = 0; i < currentCourses.length; i += 1) {
-                  let classInfoQuery = "SELECT date, availableSeats, subject, description FROM " +
-                                    "userCourses WHERE name = " + currentCourses[i];
-                  let classInfoResult = await db.get(classInfoQuery);
-
-                  // Single course to add into course history
-                  let newCourseHistorySnapShot = {[currentCourse[i]]: classInfoResult};
-                  studentClasses.push(newCourseHistorySnapShot);
-                }
+                let studentClasses = await getStudentClassesInfo(db, currentCourses);
 
                 /**
                  * adding new "transaction(adding a class) to be mapped to a user up to date
@@ -379,11 +296,14 @@ app.post("/enrollCourse", async function(req, res) {
                 let newTransactionStamp = {[newTransactionKey]:  studentClasses};
                 courseHistory.push(newTransactionStamp);
 
-                await db.close;
+                await closeDbConnection(db);
                 // Append confirmation code
-                res.text("text").status(SUCCESS_CODE)
+                res.type("text").status(SUCCESS_CODE)
                 .send("Successfully added course, this is the confirmation code: " + newCode);
               }
+            } else {
+              res.type("text").status(USER_ERROR_CODE)
+               .send("A conflict in your schedule has occured");
             }
           } else {
             res.type("text").status(USER_ERROR_CODE)
@@ -398,7 +318,7 @@ app.post("/enrollCourse", async function(req, res) {
           .send("You are not logged in. Please sign in");
       }
     } catch (error) {
-
+      console.error("Error:", error);
     }
   } else {
     /**
@@ -411,6 +331,121 @@ app.post("/enrollCourse", async function(req, res) {
       .send("No username is specified. Please login in before trying to adding a class")
   }
 });
+
+/**
+ * Retrieves information about each course the student is currently taking.
+ * @param {Object} db - The SQLite database connection.
+ * @param {String[]} currentCourses - Array containing names of current courses.
+ * @returns {Promise<Array>} - A Promise that resolves to an array of objects,
+ * where each object contains information about a course.
+ */
+async function getStudentClassesInfo(db, currentCourses) {
+  try {
+    // Array to store information about each course the student is taking
+    let studentClasses = [];
+
+    // Loop through each current course
+    for (let i = 0; i < currentCourses.length; i += 1) {
+
+      // Query to get information about the current course
+      let classInfoQuery = "SELECT date, availableSeats, subject, description FROM classes WHERE name = ?";
+
+      // Execute the query to get class information
+      let classInfoResult = await db.get(classInfoQuery, currentCourses[i]);
+
+      // Create a snapshot object for the current course and add it to studentClasses array
+      let newCourseHistorySnapShot = { [currentCourses[i]]: classInfoResult };
+      studentClasses.push(newCourseHistorySnapShot);
+    }
+
+    return studentClasses;
+  } catch (error) {
+    console.error("Error", error);
+  }
+}
+
+/**
+ * Checks if there is a time conflict between two classes
+ * @param {sqlite3.Database} db - The database object for the connection
+ * @param {String} toBeEnrolledCourseDate - The dates that the request enrolled date
+ *                                      lies on.
+ * @param {String[]} currentCourses - An array of course that the user is current taking
+ * @return - A boolean representing if a conflict does indeed occur, true if so, if not false
+ */
+async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
+  let conflictInSchedule = false;
+  try {
+    for (let i = 0; i < currentCourses.length; i += 1) {
+      let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i]);
+      console.log(santizedInfo);
+
+       /**
+        * Check each day the to be enrolled course takes places against logged in user
+        * current course days
+        */
+       for (let j = 0; j < santizedInfo[2].length; j += 1) {
+         // compares for every day in the selectedCourse we want to enroll
+         // make sure if one of the days is equal
+         if ((santizedInfo[3]).includes((santizedInfo[2])[j])) {
+           // Checking if two times on the same day overlap
+           conflictInSchedule = timesOverlap(santizedInfo[0], santizedInfo[1]);
+           if (conflictInSchedule) {
+             // Exit both loops since conflict has been found
+             i = currentCourses.length;
+             j = santizedInfo[2].length;
+           }
+         }
+       }
+     }
+     return conflictInSchedule;
+  } catch (error) {
+    console.error("Error", error);
+  }
+}
+
+/**
+ * Retrives the dates and times of both a current class a student is taking and the enrolled one
+ * the student plans on taking.
+ * @param {sqlite3.Database} db - The database object for the connection
+ * @param {String} toBeEnrolledCourseDate - The dates that the request enrolled date
+ *                                      lies on.
+ * @param {String} currentCourse - A course that the logged in user is taking
+ * @returns An array of santatized day and time information for both class the user is taking and
+ *          request classes
+ */
+async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
+  try {
+    // Accessing the nested date value from result of .get()
+    let dateQuery = "SELECT date FROM classes WHERE name = ?;"
+    let dateResultOB = await db.get(dateQuery, currentCourse);
+    let date = dateResultOB.date;
+
+    let selectedCourseDateSplit = toBeEnrolledCourseDate.split("  ");
+    let currentCourseDateSplit = date.split("  ");
+
+    // Storing days and times for both dates to compare
+    let selectedCourseDays = selectedCourseDateSplit[0];
+    let selectedCourseTimes = selectedCourseDateSplit[1];
+    let currentCourseDays = currentCourseDateSplit[0];
+    let currentCourseTimes = currentCourseDateSplit[1];
+
+    // Splitting individual dates among each other
+    // courseDays: [M, W, T] (users course)
+    // currentCourseDays: [T, Th] (to be enrolled course)
+    //    - represents the entire history of users courses they've enrolled
+    let selectedCourseDaysSplit = selectedCourseDays.split(" ");
+    let currentCourseDaysSplit = currentCourseDays.split(" ");
+
+    let returnArr = [];
+    returnArr.push(selectedCourseTimes);
+    returnArr.push(currentCourseTimes);
+    returnArr.push(selectedCourseDaysSplit);
+    returnArr.push(currentCourseDaysSplit);
+    return returnArr;
+  } catch (error) {
+    // Handle error later;
+  }
+}
 
 // Feature #5
 app.get("/searchClass/:className", async function(req, res) {
