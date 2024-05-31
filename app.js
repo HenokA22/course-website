@@ -186,7 +186,6 @@ app.post("/enrollCourse", async function(req, res) {
 
       // Extracting the text (true / false)
       let isUserLogin = result.loginStatus;
-
       if(isUserLogin === "true") {
 
         // Note that classname is guranteed to be filled as client picks a class to make a request
@@ -240,48 +239,9 @@ app.post("/enrollCourse", async function(req, res) {
 
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
-                // lines 243 to lines 283 need to be factored out to a function
 
-                 // move this around
-                 // Updating the database available seat count now
-                let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
-                                      " WHERE name = ?;";
-                await db.run(updateSeatCount, className);
-
-                // No need to store metadata into a variable (look later to remove it)
-
-                // Insert the course schedule in backend now
-                // First get major value from database
-                let majorQuery = "SELECT major FROM userCourses WHERE username = ?;";
-                let majorResult = await db.get(majorQuery, userName);
-                let userMajor = majorResult.major;
-
-                // Now updating the database to reflect all new course on the backend
-                let sql="INSERT INTO userCourses (username, takingCourse, major) VALUES (?, ?, ?);";
-                await db.run(sql, [userName, className, userMajor]);
-
-                // creates the code
-                let newCode = createCode();
-
-                // Gather all the information for each course and add it courseHistory array
-
-                /**
-                 * Grabing information from each course the student take putting that into an object
-                 * Then applying then assembling that into a larger array that represents what the
-                 * student is currently taking.
-                 */
-                let studentClasses = await getStudentClassesInfo(db, currentCourses);
-
-                /**
-                 * adding new "transaction(adding a class) to be mapped to a user up to date
-                 * course schedule.
-                 */
-                let newTransactionKey = "" + newCode;
-                let newTransactionStamp = {[newTransactionKey]:  studentClasses};
-                courseHistory.push(newTransactionStamp);
-
-                await closeDbConnection(db);
-                // Append confirmation code
+                // Test this later
+                helperFunction(db, totalSeatsVal, className, userName);
                 res.type("text").status(SUCCESS_CODE)
                 .send("Successfully added course, this is the confirmation code: " + newCode);
               }
@@ -315,6 +275,60 @@ app.post("/enrollCourse", async function(req, res) {
       .send("No username is specified. Please login in before trying to adding a class")
   }
 });
+
+/**
+ * Primarly this function is meant to factor out code. The two purposes it serves is 1, updating the
+ * state of the database with the client chosen course, 2 save a snapshot of the logged in user
+ * code.
+ * @param {sqlite3.Database} db - The SQLite database connection.
+ * @param {Number} totalSeatsVal - The current value of the user selected course to enroll within
+ * @param {String} className - Name of the class to the user selected course to enroll within
+ * @param {String} userName - The username of the logged in user.
+ */
+async function helperFunction(db, totalSeatsVal, className, userName) {
+  try {
+    // Updating the database available seat count now
+    let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
+    " WHERE name = ?;";
+    await db.run(updateSeatCount, className);
+
+    // No need to store metadata into a variable (look later to remove it)
+
+    // Insert the course schedule in backend now
+    // First get major value from database
+    let majorQuery = "SELECT major FROM userCourses WHERE username = ?;";
+    let majorResult = await db.get(majorQuery, userName);
+    let userMajor = majorResult.major;
+
+    // Now updating the database to reflect all new courses on the backend
+    let sql = "INSERT INTO userCourses (username, takingCourse, major) VALUES (?, ?, ?);";
+    await db.run(sql, [userName, className, userMajor]);
+
+    // creates the code
+    let newCode = createCode();
+
+    // Gather all the information for each course and add it courseHistory array
+
+    /**
+    * Grabing information from each course the student take putting that into an object
+    * Then applying then assembling that into a larger array that represents what the
+    * student is currently taking.
+    */
+    let studentClasses = await getStudentClassesInfo(db, currentCourses);
+
+    /**
+    * adding new "transaction(adding a class) to be mapped to a user up to date
+    * course schedule.
+    */
+    let newTransactionKey = "" + newCode;
+    let newTransactionStamp = {[newTransactionKey]:  studentClasses};
+    courseHistory.push(newTransactionStamp);
+
+    await closeDbConnection(db);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
 
 /**
  * Creates a random 6 digits code to distigush a new class enrollement for a student
