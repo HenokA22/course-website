@@ -289,21 +289,82 @@ app.post("/enrollCourse", async function(req, res) {
      */
 
     res.type("text").status(USER_ERROR_CODE)
-      .send("No username is specified. Please login in before trying to adding a class")
+      .send("No username is specified. Please login in before trying to adding a class");
   }
 });
 
 /**
  * Basic implementations:
  *
- * 1.) Get the basic search working from the client
+ * 1.) Implement search class feature (based on a name)
  *
- * 2.) Figure out a way to filter classes on 3 criteria (subject, time, credits)
+ * 2.) Figure out how to apply each filter
  *
- * 3.) More complicated (date spec, and quarter offered)
+ * 3.) Send back the response
  */
-app.get("/search/:className", async function(req, res) {
-  let className = req.params.className;
+//?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
+app.get("/search", async function(req, res) {
+  let className = req.query.className;
+  let date = req.query.date; // Checkboxs on the front end: M W F in an array
+  let subject = req.query.subject; // an array
+  let credits = req.query.credits; // an array
+  let courseLevel = req.query.courseLevel // An array course level on the front end
+  if(className) {
+    // Class is passed therefore get info only from a class
+  } else {
+    // Filter from the entire class
+
+    let filterAll = [date, subject, credits, courseLevel];
+
+    // Names for each of the values in the filter all array lined accordingly
+    let filterNames = ["date", "subject", "credits", "courseLevel"];
+    let validFilters = [];
+
+    for (let i = 0; i < filterAll.length; i += 1) {
+      if (filterAll[i] !== undefined) {
+
+        // Add column name to the front of each the values of the filter
+        filterAll[i].unshift(filterNames[i]);
+
+        // Add an column name to the zeros index of each array
+        validFilters.push(filterAll[i]);
+      }
+    }
+
+    let queryStart = "SELECT * FROM classes WHERE ";
+
+    /**
+     * How to access the field name
+     *
+     * Then think about appending the smaller SQL query
+     */
+
+    // Note the that after this should follow the " =" value
+    let fencePostOutTheName = validFilters[0][0];
+    queryStart += fencePostOutTheName + ; // ....
+    for (let i = 0; i < validFilters.length; i += 1) {
+      // fence post
+      if() {
+        let name = validFilters[i][0];
+      }
+    }
+
+    /**
+     * Logic to apply each filter
+     *
+     * 1.) Determine which filters are valid
+     *
+     * 2.) Store the the saved non null filters into an array
+     *
+     * 3.) Figure out a way to reconstruct the query from given information.
+     *
+     * 4.) db.all return
+     */
+  }
+
+
+
+
   if (className) {
     let query = "SELECT * FROM classes ORDER BY name DESC;";
     try {
@@ -321,9 +382,7 @@ app.get("/search/:className", async function(req, res) {
   } else {
     res.type("text").status(SERVER_ERROR_CODE)
   }
-
 });
-
 
 // Feature #5
 app.get("/searchClass/:className", async function(req, res) {
@@ -334,10 +393,6 @@ app.get("/searchClass/:className", async function(req, res) {
    *
    * 3. send information back  to the client
    */
-
-
-
-
 });
 
 
