@@ -302,7 +302,7 @@ app.get("/search/:className", async function(req, res) {
         .send("An error occurred on the server. Try again later.");
     }
   } else {
-    res.tye
+    res.type("text").status(SERVER_ERROR_CODE)
   }
 
 });
@@ -317,6 +317,10 @@ app.get("/searchClass/:className", async function(req, res) {
    *
    * 3. send information back  to the client
    */
+
+
+
+
 });
 
 
