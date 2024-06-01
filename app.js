@@ -34,31 +34,6 @@ let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
 
 
 /**
- * NOTES ON STRUCTURE of various attributes in the database
- * The of the value of a currentCourse field in the data base should be an array of json objects with it key the name of class on the users schedule and the value another json object holding infromation about the key
- * the name
- *
- * {
- *  name (name of class from classes table) : {
- *                                                date(recieved from classes table): value
- *                                                subject(recieved from classes table): value
- *                                                description(recieved from classes table): value
- *                                            }
- * }
- *
- * {
- *  currentCourses:
- *
- *  cse154: {
- *    date:
- *    subject:
- *    description:
- *    seats:
- *  }
- *
- * }
- *
- *
  *
  * The date field in format of D D D  x:xx-x:xx period(am/pm)
  *
@@ -293,107 +268,133 @@ app.post("/enrollCourse", async function(req, res) {
   }
 });
 
-/**
- * Basic implementations:
- *
- * 1.) Implement search class feature (based on a name)
- *
- * 2.) Figure out how to apply each filter
- *
- * 3.) Send back the response
- */
-//?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
+// Performs a search on the data base for classes the match the search term and filters.
+// ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
 app.get("/search", async function(req, res) {
   let className = req.query.className;
   let date = req.query.date; // Checkboxs on the front end: M W F in an array
-  let subject = req.query.subject; // an array
-  let credits = req.query.credits; // an array
+  let subject = req.query.subject; // an array of subjects
+  let credits = req.query.credits; // an array of credits
   let courseLevel = req.query.courseLevel // An array course level on the front end
+  let query = "";
+  let classQueryUsed = false;
+
+  // All possible filters
+  let filterAll = [date, subject, credits, courseLevel];
+
+  // Names for each of the values in the filter all array lined accordingly
+  let filterNames = ["date", "subject", "credits", "courseLevel"];
+  let validFilters = [];
+
+  // Checking which filters are actually used
+  for (let i = 0; i < filterAll.length; i += 1) {
+    if (filterAll[i] !== undefined) {
+
+      // Add column name to the front of each the values of the filter
+      filterAll[i].unshift(filterNames[i]);
+
+      // Add an column name to the zeros index of each array
+      validFilters.push(filterAll[i]);
+    }
+  }
+
   if(className) {
-    // Class is passed therefore get info only from a class
+    classQueryUsed = true;
+
+    // Regular expression used to match any digit
+    const regex = /\d/;
+
+    // Test to see if reg name or short name is the search terms
+    if(regex.test(className)) {
+      // shortname
+      query += "SELECT * FROM classes WHERE (shortName = ?";
+
+      query = applyFiltersToQuery(query, validFilters);
+    } else {
+      query += "SELECT * FROM classes WHERE (name = ?";
+      // regular class name
+
+      query = applyFiltersToQuery(query, validFilters);
+    }
   } else {
-    // Filter from the entire class
 
-    let filterAll = [date, subject, credits, courseLevel];
+    // reconstruct query based off data
 
-    // Names for each of the values in the filter all array lined accordingly
-    let filterNames = ["date", "subject", "credits", "courseLevel"];
-    let validFilters = [];
+    query = "SELECT * FROM classes WHERE (";
 
-    for (let i = 0; i < filterAll.length; i += 1) {
-      if (filterAll[i] !== undefined) {
+    // The code below should be factored out in smaller functions that can be reused elsewhere
 
-        // Add column name to the front of each the values of the filter
-        filterAll[i].unshift(filterNames[i]);
+    // This double for loop generates the search/filter query
 
-        // Add an column name to the zeros index of each array
-        validFilters.push(filterAll[i]);
+    query = applyFiltersToQuery(query, validFilters);
+  }
+
+  try {
+    let db = await getDBConnection();
+
+    /**
+     * Ternary operator is used to distingush whether or not the a search term was used in the
+     * search bar.
+     */
+    let result = classQueryUsed ? await db.all(query) : await db.all(query, className);
+
+    let matchingSearchClasses = {"classes": result};
+    res.json(matchingSearchClasses);
+  } catch (error) {
+    console.error("Error:", error);
+
+    /**
+     * Using the error message, send a response whether or not the error is by the user or the
+     *
+     * server.
+     *
+     * Should be accomplished by an if else block
+     */
+    //res.type()
+  }
+
+  // A good spot to apply print statements to test out query generation;
+});
+
+/**
+ * Applies filters to a translated search query from the UI
+ * @param {String} query - A select statement without filters
+ * @param {Array} validFilters - An array of all the filters to apply on the query
+ * @returns - Completed search query with filters applied
+ */
+function applyFiltersToQuery(query, validFilters) {
+  for (let i = 0; i < validFilters.length; i += 1) {
+    let nameAndValuesForAFilter = validFilters[i];
+    let name = nameAndValuesForAFilter[0];
+
+    // traversing the values of a filter
+    for (let j =  1; j < nameAndValuesForAFilter[i].length; j += 1) {
+
+      // The query structure differs based on if the date filter is applied.
+      if (name === "date") {
+        query += name + " LIKE \"%" +  nameAndValuesForAFilter[i] + "%\"";
+      } else {
+        query += name + " = " + nameAndValuesForAFilter[i];
+      }
+
+      // Checking whether or not another filter options is needed
+      if (j !== (nameAndValuesForAFilter[i].length - 1)) {
+        query += " OR ";
       }
     }
 
-    let queryStart = "SELECT * FROM classes WHERE ";
+    // Complete of the filters applied portion of the query with a closing parenthesis
+    query += ")";
 
-    /**
-     * How to access the field name
-     *
-     * Then think about appending the smaller SQL query
-     */
-
-    // Note the that after this should follow the " =" value
-    let fencePostOutTheName = validFilters[0][0];
-    queryStart += fencePostOutTheName + ; // ....
-    for (let i = 0; i < validFilters.length; i += 1) {
-      // fence post
-      if() {
-        let name = validFilters[i][0];
-      }
+    // Check for another filter option needing to applied to query
+    if (i !== (nameAndValuesForAFilter[i].length - 1)) {
+      query += " AND (";
     }
-
-    /**
-     * Logic to apply each filter
-     *
-     * 1.) Determine which filters are valid
-     *
-     * 2.) Store the the saved non null filters into an array
-     *
-     * 3.) Figure out a way to reconstruct the query from given information.
-     *
-     * 4.) db.all return
-     */
   }
 
-
-
-
-  if (className) {
-    let query = "SELECT * FROM classes ORDER BY name DESC;";
-    try {
-      let db = await getDBConnection();
-      let result = await db.all(query);
-      let finish = {
-        "classes": result
-      };
-      res.json(finish);
-      await closeDbConnection(db);
-    } catch (error) {
-      res.type("text").status(SERVER_ERROR_CODE)
-        .send("An error occurred on the server. Try again later.");
-    }
-  } else {
-    res.type("text").status(SERVER_ERROR_CODE)
-  }
-});
-
-// Feature #5
-app.get("/searchClass/:className", async function(req, res) {
-  /**
-   * 1. process query parameters , (course level, subject of class, credits)
-   *     - Later possibly implement an option for to display all classes that match filter options
-   * 2. Grab information from data base, and place into a JSON object
-   *
-   * 3. send information back  to the client
-   */
-});
+  query += ";";
+  return query;
+}
 
 
 /**
