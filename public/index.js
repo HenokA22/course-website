@@ -1,7 +1,6 @@
 "use strict";
 (function() {
   window.addEventListener("load", init);
-  let globalPassword = "";
 
   /** Function that runs when the page is loaded and sets up other functions. */
   function init() {
@@ -12,14 +11,23 @@
     load();
   }
 
+  /**
+   * Function is used on reload to check if the user is logged in. If so,
+   * it will display the user's name and hide the login button as if the user
+   * is already logged in.
+   */
   function checkLogin() {
     let key = localStorage.key(0);
     if(key) {
-      id("display-login").classList.add("hidden");
-      id("login").classList.add("hidden");
-      id("signout").classList.remove("hidden");
-      id("displayUser").textContent = "Welcome, " + key;
-      id("displayUser").classList.remove("hidden");
+      if(JSON.parse(localStorage.getItem(key))[1]) {
+        id("display-login").classList.add("hidden");
+        id("login").classList.add("hidden");
+        id("signout").classList.remove("hidden");
+        id("displayUser").textContent = "Welcome, " + key;
+        id("displayUser").classList.remove("hidden");
+      } else {
+        signout();
+      }
     }
   }
 
@@ -72,6 +80,9 @@
     return courseContainer;
   }
 
+  /**
+   * Function that toggles the active class of the login pop-up and overlay.
+   */
   function toggleActiveLogin() {
     id("pop-up-login").classList.toggle("active");
     id("overlay").classList.toggle("active");
@@ -80,22 +91,25 @@
     id("password").value = '';
   }
 
+  /**
+   * Function that runs when the login button is clicked.
+   */
   function login() {
     toggleActiveLogin();
     qs(".close-button").addEventListener("click", toggleActiveLogin);
     qs(".login-official").addEventListener("click", loginOfficial);
   }
 
+  /**
+   * Function that runs when the signout button is clicked.
+   * it displays the webpage as if its not logged in.
+   */
   async function signout() {
     try{
-      let username = id("displayUser").textContent.split(",")[1].trim();
-      if (localStorage.length > 0) {
-        globalPassword = localStorage.getItem(username);
-      }
-      let password = globalPassword;
+      let username = localStorage.key(0);
+      let password = JSON.parse(localStorage.getItem(username))[0];
       let params = new FormData();
 
-      console.log(password);
       params.append("username", username);
       params.append("password", password);
 
@@ -111,9 +125,14 @@
       }
     } catch (error) {
       console.log(error);
+      handleSignoutErr(error);
     }
   }
 
+  /**
+   * The official login function that sends a fetch request to the server to log in the user.
+   * It also saves the user's password if the user wants to save it.
+   */
   async function loginOfficial() {
     let username = id("username").value.trim();
     let password = id("password").value.trim();
@@ -135,20 +154,7 @@
           id("error-message").classList.add("error");
         } else {
           await statusCheck(result);
-          if (result.status === 200) {
-            toggleActiveLogin();
-            id("login").classList.add("hidden");
-            id("display-login").classList.add("hidden");
-            id("signout").classList.remove("hidden");
-            id("displayUser").textContent = "Welcome, " + username;
-            id("displayUser").classList.remove("hidden");
-            if(saveUser) {
-              window.localStorage.setItem(username, password);
-            }
-            globalPassword = password;
-          } else {
-            id("error-message").textContent = data.message;
-          }
+          loginOfficialHelper(result, username, password, saveUser);
         }
       } catch (err) {
         handleLoginErr(err);
@@ -159,6 +165,28 @@
       msg.textContent = "Please fill in all the fields";
     }
   }
+
+  /**
+   * Helper function that helps with the login function.
+   * @param {Object} result - result from the fetch request
+   * @param {Object} username - username of the user
+   * @param {Object} password - password of the user
+   */
+  function loginOfficialHelper(result, username, password, saveUser) {
+    if (result.status === 200) {
+      toggleActiveLogin();
+      id("login").classList.add("hidden");
+      id("display-login").classList.add("hidden");
+      id("signout").classList.remove("hidden");
+      id("displayUser").textContent = "Welcome, " + username;
+      id("displayUser").classList.remove("hidden");
+      let localStorageData = [password, saveUser];
+      window.localStorage.setItem(username, JSON.stringify(localStorageData));
+    } else {
+      id("error-message").textContent = data.message;
+    }
+  }
+
   /**
    * Function that runs when the search button is clicked.
    * It logs a message to the console.
@@ -173,6 +201,10 @@
     }
   }
 
+  /**
+   *  Function that handles the error when the user tries to sign out.
+   * @param {Object} err - error object that is thrown
+   */
   function handleSignoutErr(err) {
     let frame = qs("body");
     frame.innerHTML = ' ';
@@ -181,6 +213,10 @@
     frame.appendChild(error);
   }
 
+  /**
+   * Function that handles the error when the user tries to log in.
+   * @param {Object} err - error object that is thrown
+   */
   function handleLoginErr(err) {
     let frame = qs("body");
     frame.innerHTML = ' ';
@@ -208,6 +244,7 @@
   function fetchErr() {
     console.error("There was an error with the fetch request");
   }
+
   /**
    * Returns the element that has the ID attribute with the specified value.
    * @param {string} id - element ID
