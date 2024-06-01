@@ -85,15 +85,41 @@ app.get("/getItems", async function(req, res) {
   }
 });
 
+/** Signs out the user and updates the login status of that user to false. */
+app.post("/signout", async function(req, res) {
+  let username = req.body.username;
+  let password = req.body.password;
+  if (username && password) {
+    let query = "SELECT * FROM login WHERE username = ? AND password = ?;";
+    try {
+      let db = await getDBConnection();
+      let result = await db.get(query, [username, password]);
+      if (result !== undefined) {
+        let updateLoginStatus = "UPDATE login SET loginstatus = ? WHERE username = ? AND password = ?;";
+        await db.run(updateLoginStatus, ["false", username, password]);
+
+        await closeDbConnection(db);
+
+        res.type("text").status(SUCCESS_CODE)
+          .send("Signout successful");
+      } else {
+        res.type("text").status(USER_ERROR_CODE)
+          .send("Signout failed.");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("Username or Password is empty, please try again");
+  }
+});
+
 /** Checks whether or not a user login is successful  */
 app.post("/login", async function(req, res) {
   // Check if username and passaword are in database
   let username = req.body.username;
   let password = req.body.password;
-
-  // This is a boolean flag that lets backend know if username should be saved
-  let savePassWord = req.body.savePassWord;
-
 
   if (username && password) {
     let query = "SELECT * FROM login WHERE username = ? AND password = ?;";
@@ -108,15 +134,6 @@ app.post("/login", async function(req, res) {
         let updateQuery = "UPDATE login SET loginStatus = ? WHERE username = ? AND password = ?;";
         await db.run(updateQuery, ["true", username, password]);
 
-        // Saving username to browser if user has said so
-        if(savePassWord) {
-          let grabbingUserID = "SELECT id FROM userCourses WHERE username = ?;"
-          let userIDObj = await db.get(grabbingUserID, username);
-          let userID = userIDObj.id;
-
-          // Saving username in localstorage based on user id
-          window.localStorage.setItem("User " + userID + " username", username);
-        }
         await closeDbConnection(db);
 
         res.type("text").status(SUCCESS_CODE)

@@ -1,13 +1,26 @@
 "use strict";
 (function() {
   window.addEventListener("load", init);
+  let globalPassword = "";
 
   /** Function that runs when the page is loaded and sets up other functions. */
   function init() {
+    checkLogin();
     id("login").addEventListener("click", login);
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
     load();
+  }
+
+  function checkLogin() {
+    let key = localStorage.key(0);
+    if(key) {
+      id("display-login").classList.add("hidden");
+      id("login").classList.add("hidden");
+      id("signout").classList.remove("hidden");
+      id("displayUser").textContent = "Welcome, " + key;
+      id("displayUser").classList.remove("hidden");
+    }
   }
 
   /**
@@ -67,17 +80,38 @@
     id("password").value = '';
   }
 
-  async function login() {
+  function login() {
     toggleActiveLogin();
     qs(".close-button").addEventListener("click", toggleActiveLogin);
     qs(".login-official").addEventListener("click", loginOfficial);
   }
 
   async function signout() {
-    id("login").classList.remove("hidden");
-    id("display-login").classList.remove("hidden");
-    id("signout").classList.add("hidden");
-    id("displayUser").classList.add("hidden");
+    try{
+      let username = id("displayUser").textContent.split(",")[1].trim();
+      if (localStorage.length > 0) {
+        globalPassword = localStorage.getItem(username);
+      }
+      let password = globalPassword;
+      let params = new FormData();
+
+      console.log(password);
+      params.append("username", username);
+      params.append("password", password);
+
+      let response = await fetch("/signout", {method: "POST", body: params});
+
+      await statusCheck(response);
+      if (response.status === 200) {
+        localStorage.removeItem(username);
+        id("login").classList.remove("hidden");
+        id("display-login").classList.remove("hidden");
+        id("signout").classList.add("hidden");
+        id("displayUser").classList.add("hidden");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async function loginOfficial() {
@@ -89,13 +123,12 @@
         let params = new FormData();
         params.append("username", username);
         params.append("password", password);
+        let saveUser = false;
         if(savePass.checked) {
           params.append("savePassWord", true);
+          saveUser = true;
         }
-        console.log(username);
-        console.log(password);
-        let result = await fetch("/login", { method: "POST", body: params });
-        console.log(result.status);
+        let result = await fetch("/login", {method: "POST", body: params});
         if(result.status === 400) {
           // bad request from user.
           id("error-message").textContent = "Invalid username or password";
@@ -109,6 +142,10 @@
             id("signout").classList.remove("hidden");
             id("displayUser").textContent = "Welcome, " + username;
             id("displayUser").classList.remove("hidden");
+            if(saveUser) {
+              window.localStorage.setItem(username, password);
+            }
+            globalPassword = password;
           } else {
             id("error-message").textContent = data.message;
           }
@@ -134,6 +171,14 @@
     } else {
       btn.classList.remove("hidden");
     }
+  }
+
+  function handleSignoutErr(err) {
+    let frame = qs("body");
+    frame.innerHTML = ' ';
+    let error = document.createElement("p");
+    error.textContent = "Unable to sign out user due to error: " + err;
+    frame.appendChild(error);
   }
 
   function handleLoginErr(err) {
