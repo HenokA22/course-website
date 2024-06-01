@@ -94,7 +94,6 @@ app.post("/login", async function(req, res) {
   // This is a boolean flag that lets backend know if username should be saved
   let savePassWord = req.body.savePassWord;
 
-
   if (username && password) {
     let query = "SELECT * FROM login WHERE username = ? AND password = ?;";
     try {
@@ -240,9 +239,91 @@ app.post("/enrollCourse", async function(req, res) {
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
 
-                // Test this later
-                helperFunction(db, totalSeatsVal, className, userName);
-                res.type("text").status(SUCCESS_CODE)
+                 // move this around
+                 // Updating the database available seat count now
+                let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
+                                      " WHERE name = ?;";
+                let updateDBSeatCount = await db.run(updateSeatCount, className);
+
+                // No need to store metadata into a variable (look later to remove it)
+
+                // Insert the course schedule in backend now
+                // First get major value from database
+                let majorQuery = "SELECT major FROM userCourses WHERE username = ?";
+                let majorResult = await db.get(majorQuery, userName);
+                console.log(majorResult);
+                let userMajor = majorResult.major;
+
+                // Now updating the database to reflect all new course on the backend
+                console.log("hello");
+                console.log(userName);
+                console.log(className);
+                console.log(userMajor);
+                let sql = "INSERT INTO userCourses (username, takingCourse, major) VALUES (?, ?, ?);";
+                await db.run(sql, [userName, className, userMajor]);
+
+                console.log("After query");
+                // Creating the confirmation code below
+                let newCode = "";
+                let invalidCode = true;
+
+                console.log("After new class");
+                // While loop checks if the code is invalid or not
+                while (invalidCode) {
+                  newCode = "";
+                  for (let i = 0; i < 6; i += 1) {
+                    // Picking a random ascii value from dec 33 to 126
+                    let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
+                    let randomAsciiVal = String.fromCharCode(randomNumInRange);
+                    newCode += randomAsciiVal;
+                  }
+
+                  // Valid check
+                  if (!(confirmationCodes.has(newCode))) {
+                    confirmationCodes.add(newCode);
+                    invalidCode = false;
+                  }
+                }
+
+                // Now update the current course history
+
+                // Gather all the information for each course and add it courseHistory array
+
+                /**
+                 * 1.) gather the date, availableSeats, subject, description
+                 * 2.) put into an object
+                 * 3.) then attach that object as a key value pair in another object with the key
+                 *      as a name
+                 */
+
+
+                /**
+                 * Grabing information from each course the student take putting that into an object
+                 * Then applying then assembling that into a larger array that represents what the
+                 * student is currently taking.
+                 */
+                let studentClasses = [];
+                for (let i = 0; i < currentCourses.length; i += 1) {
+                  let classInfoQuery = "SELECT date, availableSeats, subject, description FROM " +
+                                    "userCourses WHERE name = " + currentCourses[i];
+                  let classInfoResult = await db.get(classInfoQuery);
+
+                  // Single course to add into course history
+                  let newCourseHistorySnapShot = {[currentCourse[i]]: classInfoResult};
+                  studentClasses.push(newCourseHistorySnapShot);
+                }
+
+                /**
+                 * adding new "transaction(adding a class) to be mapped to a user up to date
+                 * course schedule.
+                 */
+                let newTransactionKey = "" + newCode;
+                let newTransactionStamp = {[newTransactionKey]:  studentClasses};
+                courseHistory.push(newTransactionStamp);
+
+                await db.close();
+                // Append confirmation code
+                res.text("text").status(SUCCESS_CODE)
                 .send("Successfully added course, this is the confirmation code: " + newCode);
               }
             } else {
@@ -262,7 +343,7 @@ app.post("/enrollCourse", async function(req, res) {
           .send("You are not logged in. Please sign in");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.log(error);
     }
   } else {
     /**

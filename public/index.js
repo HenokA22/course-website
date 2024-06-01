@@ -6,9 +6,13 @@
   function init() {
     id("login").addEventListener("click", login);
     id("course-input").addEventListener("input", search);
+    id("signout").addEventListener("click", signout);
     load();
   }
 
+  /**
+   * Function that loads the courses from the server and displays them on the page.
+   */
   async function load() {
     try {
       let response = await fetch("/getItems");
@@ -22,10 +26,16 @@
         classList.appendChild(currCourseDOM);
       }
     } catch (err) {
+      console.log(err);
       fetchErr();
     }
   }
 
+  /**
+   * Function that constructs the course object and returns it as a DOM object.
+   * @param {Object} course - object that contains information about a course as JSON
+   * @returns {Object} - DOM object that contains the course information
+   */
   function constructCourse(course) {
     let courseContainer = document.createElement("article");
 
@@ -49,6 +59,64 @@
     return courseContainer;
   }
 
+  function toggleActiveLogin() {
+    id("pop-up-login").classList.toggle("active");
+    id("overlay").classList.toggle("active");
+    id("error-message").textContent = '';
+    id("username").value = '';
+    id("password").value = '';
+  }
+
+  async function login() {
+    toggleActiveLogin();
+    qs(".close-button").addEventListener("click", toggleActiveLogin);
+    qs(".login-official").addEventListener("click", loginOfficial);
+  }
+
+  async function signout() {
+    id("login").classList.remove("hidden");
+    id("signout").classList.add("hidden");
+  }
+
+  async function loginOfficial() {
+    let username = id("username").value.trim();
+    let password = id("password").value.trim();
+    let savePass = id("saveName");
+    if (username !== '' && password !== '') {
+      try {
+        let params = new FormData();
+        params.append("username", username);
+        params.append("password", password);
+        if(savePass.checked) {
+          params.append("savePassWord", true);
+        }
+        console.log(username);
+        console.log(password);
+        let result = await fetch("/login", { method: "POST", body: params });
+        console.log(result.status);
+        if(result.status === 400) {
+          // bad request from user.
+          id("error-message").textContent = "Invalid username or password";
+          id("error-message").classList.add("error");
+        } else {
+          await statusCheck(result);
+          if (result.status === 200) {
+            toggleActiveLogin();
+            id("login").classList.add("hidden");
+            id("signout").classList.remove("hidden");
+          } else {
+            id("error-message").textContent = data.message;
+          }
+        }
+      } catch (err) {
+        handleLoginErr(err);
+      }
+    } else {
+      let msg = id("error-message");
+      msg.classList.add("error");
+      msg.textContent = "Please fill in all the fields";
+    }
+  }
   /**
    * Function that runs when the search button is clicked.
    * It logs a message to the console.
@@ -63,13 +131,12 @@
     }
   }
 
-  /**
-   * Function that runs when the submit button is clicked.
-   * It logs a message to the console.
-   * @returns {void} - The function does not return anything.
-   */
-  function login() {
-    console.log('Login button clicked');
+  function handleLoginErr(err) {
+    let frame = qs("body");
+    frame.innerHTML = ' ';
+    let error = document.createElement("p");
+    error.textContent = "Unable to log in user due to error: " + err;
+    frame.appendChild(error);
   }
 
   /**
@@ -98,5 +165,14 @@
    */
   function id(id) {
     return document.getElementById(id);
+  }
+
+  /**
+   * Returns the first element that matches the given CSS selector.
+   * @param {string} query - CSS query selector.
+   * @returns {object[]} array of DOM objects matching the query.
+   */
+  function qs(query) {
+    return document.querySelector(query);
   }
 })();

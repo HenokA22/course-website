@@ -28,8 +28,12 @@
       <span id="display-login">
         Not signed in
       </span>
+      <span id="displayUser" class="hidden"></span>
       <span id="login">
         Login
+      </span>
+      <span id="signout" class="hidden">
+        Sign Out
       </span>
     </nav>
     <nav id="logo-header">
@@ -38,6 +42,30 @@
         <a href="schedule/visual.html">View Visual Schedule</a>
       </span>
     </nav>
+
+    <section class="pop-up-login" id="pop-up-login">
+      <section class="pop-up-header">
+        <section class="title">Log-In</section>
+        <button class="close-button">&times;</button>
+      </section>
+      <section class="pop-up-body">
+        <div id="error-message"></div>
+        <div>
+          <label for="username">Username:</label>
+          <input type="text" id="username" name="username" placeholder="Enter your username" required>
+        </div>
+        <div>
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required>
+        </div>
+        <button class="login-official">Log In</button>
+        <div>
+          <input type="checkbox" id="saveName" name="saveName">
+          <label for="saveName">Remember me</label><br>
+        </div>
+      </section>
+    </section>
+    <section id="overlay"></section>
     <!--
       ***
       Searching container is where the search bar will be
@@ -100,6 +128,7 @@
         </article>
       </article>
     </section>
+
     <!--
       ***
       Footer is where the copy right will be
