@@ -75,7 +75,9 @@
 
   async function signout() {
     id("login").classList.remove("hidden");
+    id("display-login").classList.remove("hidden");
     id("signout").classList.add("hidden");
+    id("displayUser").classList.add("hidden");
   }
 
   async function loginOfficial() {
@@ -103,7 +105,10 @@
           if (result.status === 200) {
             toggleActiveLogin();
             id("login").classList.add("hidden");
+            id("display-login").classList.add("hidden");
             id("signout").classList.remove("hidden");
+            id("displayUser").textContent = "Welcome, " + username;
+            id("displayUser").classList.remove("hidden");
           } else {
             id("error-message").textContent = data.message;
           }
