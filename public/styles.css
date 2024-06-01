@@ -27,7 +27,7 @@ body {
   align-items: center;
 }
 
-#login, #display-login, #logo, #visual-schedule {
+#login, #display-login, #logo, #visual-schedule, #signout {
   color: white;
   height: 100%;
   width: auto;
@@ -55,7 +55,7 @@ a {
   margin-bottom: 20px;
 }
 
-#login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover {
+#login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover, #signout:hover {
   background-color: lightgrey;
 }
 
@@ -206,5 +206,5 @@ a {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
