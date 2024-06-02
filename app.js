@@ -272,10 +272,10 @@ app.post("/enrollCourse", async function(req, res) {
 // ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
 app.get("/search", async function(req, res) {
   let className = req.query.className;
-  let date = req.query.date; // Checkboxs on the front end: M W F in an array
-  let subject = req.query.subject; // an array of subjects
-  let credits = req.query.credits; // an array of credits
-  let courseLevel = req.query.courseLevel // An array course level on the front end
+  let date = req.query.date; // Checkboxs on the front end: M W F in an array as a string
+  let subject = req.query.subject; // an array of subjects as an string
+  let credits = req.query.credits; // an array of credits as a string
+  let courseLevel = req.query.courseLevel // An array course level on the front end as a string
   let query = "";
   let classQueryUsed = false;
 
@@ -286,15 +286,25 @@ app.get("/search", async function(req, res) {
   let filterNames = ["date", "subject", "credits", "courseLevel"];
   let validFilters = [];
 
+  let arr = JSON.parse("[\"M\", \"F\"]");
+  console.log(arr);
+  console.log(typeof arr);
+
   // Checking which filters are actually used
   for (let i = 0; i < filterAll.length; i += 1) {
     if (filterAll[i] !== undefined) {
+      console.log(filterAll[i]);
+      let specificFilterArr = JSON.parse(filterAll[i]);
+      console.log(specificFilterArr);
+      console.log(typeof specificFilterArr);
 
       // Add column name to the front of each the values of the filter
-      filterAll[i].unshift(filterNames[i]);
+      specificFilterArr.unshift(filterNames[i]);
 
-      // Add an column name to the zeros index of each array
-      validFilters.push(filterAll[i]);
+      /**
+       * Adding an column name to the zeros index of each array and do no
+       */
+      validFilters.push(specificFilterArr);
     }
   }
 
@@ -306,26 +316,20 @@ app.get("/search", async function(req, res) {
 
     // Test to see if reg name or short name is the search terms
     if(regex.test(className)) {
-      // shortname
-      query += "SELECT * FROM classes WHERE (shortName = ?";
 
+      // Search used shortname
+      query += "SELECT * FROM classes WHERE (shortName = ?";
       query = applyFiltersToQuery(query, validFilters);
     } else {
       query += "SELECT * FROM classes WHERE (name = ?";
-      // regular class name
 
+      // Regular class name used in search
       query = applyFiltersToQuery(query, validFilters);
     }
   } else {
 
     // reconstruct query based off data
-
     query = "SELECT * FROM classes WHERE (";
-
-    // The code below should be factored out in smaller functions that can be reused elsewhere
-
-    // This double for loop generates the search/filter query
-
     query = applyFiltersToQuery(query, validFilters);
   }
 
@@ -344,6 +348,7 @@ app.get("/search", async function(req, res) {
     console.error("Error:", error);
 
     /**
+     * TODO:
      * Using the error message, send a response whether or not the error is by the user or the
      *
      * server.
@@ -363,6 +368,8 @@ app.get("/search", async function(req, res) {
  * @returns - Completed search query with filters applied
  */
 function applyFiltersToQuery(query, validFilters) {
+
+  // This double for loop generates the search/filter query
   for (let i = 0; i < validFilters.length; i += 1) {
     let nameAndValuesForAFilter = validFilters[i];
     let name = nameAndValuesForAFilter[0];
