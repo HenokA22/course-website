@@ -139,7 +139,7 @@ app.get("/itemDetails/:className", async function(req, res) {
   // However this conditional should always pass as it would only execute on a callback
   if (className) {
     try {
-      let query = "SELECT * FROM classes WHERE name = ?;";
+      let query = "SELECT * FROM classes WHERE shortName = ?;";
       let db = await getDBConnection();
       let result = await db.get(query, req.params.className);
       if (result !== undefined) {

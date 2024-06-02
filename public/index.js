@@ -44,12 +44,49 @@
       for (let i = 0; i < data.classes.length; i++) {
         let currObj = data.classes[i];
         let currCourseDOM = constructCourse(currObj);
+        currCourseDOM.addEventListener('click', openCourse);
         classList.appendChild(currCourseDOM);
       }
     } catch (err) {
-      console.log(err);
       fetchErr();
     }
+  }
+
+  function toggleCoursePage() {
+    qsa('.title')[1].textContent = '';
+    id("error-message").textContent = '';
+    id("pop-up-courses").classList.toggle("active");
+    id("overlay2").classList.toggle("active");
+  }
+
+  function openCourse() {
+    toggleCoursePage();
+    qsa(".close-button")[1].addEventListener("click", toggleCoursePage);
+    let title = document.createTextNode(this.querySelector("h2").textContent + " - " +
+                this.querySelector("p").textContent);
+    qsa('.title')[1].appendChild(title);
+    fetchCoursePage();
+  }
+
+  async function fetchCoursePage() {
+    try{
+      let courseName = qsa('.title')[1].textContent.split(' - ')[0].trim();
+      console.log(courseName);
+      let response = await fetch("/itemDetails/" + courseName);
+      await statusCheck(response);
+      let data = await response.json();
+      constructCoursePage(data);
+      console.log(data);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  function constructCoursePage(data) {
+    let overview = document.createElement("section");
+    overview.classList.add("overview");
+    let h3OverviewTitle = document.createElement("h3");
+    h3OverviewTitle.textContent = "Course Overview";
   }
 
   /**
@@ -96,7 +133,7 @@
    */
   function login() {
     toggleActiveLogin();
-    qs(".close-button").addEventListener("click", toggleActiveLogin);
+    qsa(".close-button")[0].addEventListener("click", toggleActiveLogin);
     qs(".login-official").addEventListener("click", loginOfficial);
   }
 
@@ -124,7 +161,6 @@
         id("displayUser").classList.add("hidden");
       }
     } catch (error) {
-      console.log(error);
       handleSignoutErr(error);
     }
   }
@@ -262,4 +298,14 @@
   function qs(query) {
     return document.querySelector(query);
   }
+
+  /**
+   * Returns the array of elements that match the given CSS selector.
+   * @param {string} query - CSS query selector
+   * @returns {object[]} array of DOM objects matching the query.
+   */
+  function qsa(query) {
+    return document.querySelectorAll(query);
+  }
+
 })();
