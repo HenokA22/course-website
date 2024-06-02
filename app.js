@@ -286,17 +286,10 @@ app.get("/search", async function(req, res) {
   let filterNames = ["date", "subject", "credits", "courseLevel"];
   let validFilters = [];
 
-  let arr = JSON.parse("[\"M\", \"F\"]");
-  console.log(arr);
-  console.log(typeof arr);
-
   // Checking which filters are actually used
   for (let i = 0; i < filterAll.length; i += 1) {
     if (filterAll[i] !== undefined) {
-      console.log(filterAll[i]);
       let specificFilterArr = JSON.parse(filterAll[i]);
-      console.log(specificFilterArr);
-      console.log(typeof specificFilterArr);
 
       // Add column name to the front of each the values of the filter
       specificFilterArr.unshift(filterNames[i]);
@@ -340,6 +333,7 @@ app.get("/search", async function(req, res) {
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
+    console.log(query);
     let result = classQueryUsed ? await db.all(query) : await db.all(query, className);
 
     let matchingSearchClasses = {"classes": result};
@@ -368,24 +362,25 @@ app.get("/search", async function(req, res) {
  * @returns - Completed search query with filters applied
  */
 function applyFiltersToQuery(query, validFilters) {
-
   // This double for loop generates the search/filter query
   for (let i = 0; i < validFilters.length; i += 1) {
     let nameAndValuesForAFilter = validFilters[i];
     let name = nameAndValuesForAFilter[0];
 
     // traversing the values of a filter
-    for (let j =  1; j < nameAndValuesForAFilter[i].length; j += 1) {
+    for (let j =  1; j < nameAndValuesForAFilter.length; j += 1) {
 
       // The query structure differs based on if the date filter is applied.
       if (name === "date") {
-        query += name + " LIKE \"%" +  nameAndValuesForAFilter[i] + "%\"";
+        //console.log(nameAndValuesForAFilter[j]);
+        console.log(nameAndValuesForAFilter);
+        query += name + " LIKE \"%" +  nameAndValuesForAFilter[j] + "%\"";
       } else {
-        query += name + " = " + nameAndValuesForAFilter[i];
+        query += name + " = " + nameAndValuesForAFilter[j];
       }
 
       // Checking whether or not another filter options is needed
-      if (j !== (nameAndValuesForAFilter[i].length - 1)) {
+      if (j !== (nameAndValuesForAFilter.length - 1)) {
         query += " OR ";
       }
     }
