@@ -156,8 +156,6 @@ a {
   z-index: 10;
   background-color: white;
   width: 1000px;
-  /* height: 1000px;
-  max-height: 80%; */
   max-width: 80%;
 }
 
@@ -188,6 +186,11 @@ a {
   font-weight: bold;
 }
 
+.close-button:hover {
+  background-color: darkgray;
+  color: white;
+}
+
 .pop-up-header2 {
   background-color: #85754d;
   color: white;
@@ -206,10 +209,7 @@ a {
 .body-course {
   background-color: #4d307f;
   padding: 20px;
-}
-
-.overview {
-  background-color: #ffffff;
+  text-align: center;
 }
 
 #overlay, #overlay2 {
@@ -230,39 +230,115 @@ a {
   font-weight: bold;
 }
 
-.overview {
-  border: 1px solid black;
-}
-
+/* Used in constructCoursePageOverview to display each sec tag as flex */
 .containers {
   display: flex;
 }
 
+/* Used in constructCoursePageOverview to display the section of overview in bold*/
 .bold {
   flex: 0 0 150px;
   text-align: right;
   font-weight: bold;
 }
 
+/* Used in constructCoursePageOverview to display the description section of overview in normal text */
 .course-desc {
   flex: 1;
-  padding-left: 20px
+  padding-left: 20px;
+  text-align: left;
 }
 
+/* Used in constructCoursePageOverview this is the overall tag that all the overview detail will be in*/
 .overview-content {
   border: none;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   background-color: #ffffff;
   border-radius: 30px;
   padding-left: 30px;
+  margin-bottom: 60px;
 }
 
+/* Used in constructCourseSection to style the overall Parent DOM tag that each course section detail will be in */
+.overview-content-sec {
+  border: none;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  background-color: #ffffff;
+  border-radius: 30px;
+  padding: 10px;
+}
+
+/* Used in fetchCoursePage to style the title of the overview section */
 .title-overview {
   border: none;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
   background-color: #ffffff;
   border-radius: 30px;
   padding: 10px;
+}
+
+/* Used in fetchCoursePage to style the title of the course section */
+.title-overview-sec {
+  border: none;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  background-color: #ffffff;
+  border-radius: 30px;
+  text-align: center;
+}
+
+/* Used in constructCourseSectionHelper to style the section info of each section box of the DOM */
+.course-sec-info {
+  flex: 0 0 100px;
+  text-align: center;
+  /* border: 1px solid black; */
+  margin-right: 10px;
+}
+
+/* Used in constructCourseSectionHelper to style the section header of each section box of the DOM */
+.course-sec-header {
+  flex: 0 0 100px;
+  text-align: center;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+/* Used in courseSectionHeader to style the section header of each of the class section detail */
+.course-sec-detail {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 30px;
+  margin: 0 auto 20px;
+}
+
+/* Used in courseSectionHeader to style the overall parent DOM that each tag will be put in */
+.courseHeader-sec-detail {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+}
+
+.enrollBox {
+  transform: scale(0.4);
+}
+
+.enrollBox:hover {
+  cursor: pointer;
+}
+
+.enrollButton {
+  margin-top: 10px;
+  background-color: #85754d;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  width: fit-content;
+  font-weight: bold;
+}
+
+.enrollButton:hover {
+  filter: brightness(0.8);
+  cursor: pointer;
 }
 
 #overlay.active, #overlay2.active {
@@ -272,4 +348,9 @@ a {
 
 .hidden {
   display: none !important;
+}
+
+.hide {
+  opacity: 0;
+  pointer-events: none;
 }

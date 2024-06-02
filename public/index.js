@@ -52,14 +52,25 @@
     }
   }
 
+  /**
+   * Function that toggles the pop up page for each course class user clicks.
+   */
   function toggleCoursePage() {
     qsa('.title')[1].textContent = '';
     qs('.body-course').textContent = '';
+    let errormsg = document.createElement('div');
+    errormsg.id = "error-message-course";
+    qs('.body-course').appendChild(errormsg);
     id("error-message").textContent = '';
     id("pop-up-courses").classList.toggle("active");
     id("overlay2").classList.toggle("active");
   }
 
+  /**
+   * Function that connects sub functions to create the pop up and functionality
+   * of the pop up for a specific course. It toggles the pop up and calls
+   * a helper method to fetch the required data
+   */
   function openCourse() {
     toggleCoursePage();
     qsa(".close-button")[1].addEventListener("click", toggleCoursePage);
@@ -69,6 +80,10 @@
     fetchCoursePage();
   }
 
+  /**
+   * fetchCoursePage fetches the specific course data based on the course short name.
+   * It then constructs the overall course overview and course sections.
+   */
   async function fetchCoursePage() {
     try{
       let courseName = qsa('.title')[1].textContent.split(' - ')[0].trim();
@@ -77,27 +92,236 @@
       await statusCheck(response);
       let data = await response.json();
 
+      // title for overview
       let h3OverviewTitle = document.createElement("h3");
       h3OverviewTitle.textContent = "Course Overview";
       h3OverviewTitle.classList.add("title-overview");
 
-      let coursePageOverviewDOM = constructCoursePageOverview(data);
+      //title for course sections
+      let h3SectionTitle = document.createElement("h3");
+      h3SectionTitle.textContent = courseName + " Course Sections";
+      h3SectionTitle.classList.add("title-overview-sec");
+
+      let coursePageOverviewDOM = constructCoursePageOverview(data[0]);
       let courseSections = constructCourseSection(data);
 
       qs('.body-course').appendChild(h3OverviewTitle);
       qs('.body-course').appendChild(coursePageOverviewDOM);
-      console.log(data);
+      qs('.body-course').appendChild(h3SectionTitle);
+      courseSections.insertBefore(courseSectionHeader(), courseSections.firstChild);
+      qs('.body-course').appendChild(courseSections);
     } catch (err) {
       console.log(err);
     }
   }
 
+  /**
+   * This method constructs the course section for every class with that shortname.
+   * @param {Object} data - Array representing the possible classes with the shortname
+   * @returns {Object} - a fully built DOM representing the entire DOM for each course section.
+   */
   function constructCourseSection(data) {
-
+    //main body in which each class section will be in
+    let overviewContentSec = document.createElement("section");
+    overviewContentSec.classList.add("overview-content-sec");
+    console.log(data.length);
+    for (let i = 0; i < data.length; i++) {
+      let currentClass = data[i];
+      let classSecDOM = constructCourseSectionHelper(currentClass, i);
+      overviewContentSec.appendChild(classSecDOM);
+    }
+    return overviewContentSec;
   }
 
-  function constructCoursePageOverview(data) {
+  /**
+   * This method constructs the header you see above the course section detail
+   * @returns {Object} - A DOM that represents the header for the course section.
+   */
+  function courseSectionHeader() {
+    let classContainer = document.createElement("article");
+    classContainer.classList.add("courseHeader-sec-detail");
 
+    let courseSection = document.createElement("p");
+    courseSection.textContent = "Section";
+    courseSection.classList.add("course-sec-header");
+
+    let courseCred = document.createElement("p");
+    courseCred.textContent = "Credits";
+    courseCred.classList.add("course-sec-header");
+
+    let courseDays = document.createElement("p");
+    courseDays.textContent = "Days";
+    courseDays.classList.add("course-sec-header");
+
+    let courseTime = document.createElement("p");
+    courseTime.textContent = "Time";
+    courseTime.classList.add("course-sec-header");
+
+    let courseCapacity = document.createElement("p");
+    courseCapacity.textContent = "Seats";
+    courseCapacity.classList.add("course-sec-header");
+
+    let courseEnroll = document.createElement("p");
+    courseEnroll.textContent = "Enroll";
+    courseEnroll.classList.add("course-sec-header");
+
+    classContainer.appendChild(courseSection);
+    classContainer.appendChild(courseCred);
+    classContainer.appendChild(courseDays);
+    classContainer.appendChild(courseTime);
+    classContainer.appendChild(courseCapacity);
+    classContainer.appendChild(courseEnroll);
+
+    return classContainer;
+  }
+
+  /**
+   *
+   * @param {Object} currentClass - object representing the current class from the
+   *                                array of classes
+   * @param {Integer} index - indicating which section ID we are
+   * @returns {Object} - Fully built DOM of the specific class information needed to append
+   *                     to the main view.
+   */
+  function constructCourseSectionHelper(currentClass, index) {
+    console.log(currentClass);
+    let classContainer = document.createElement("article");
+    classContainer.classList.add("course-sec-detail");
+
+    let courseSection = document.createElement("p");
+    courseSection.textContent = indexToAlphabet(index);
+    courseSection.classList.add("course-sec-info");
+
+    let courseCred = document.createElement("p");
+    courseCred.textContent = currentClass.credits;
+    courseCred.classList.add("course-sec-info");
+
+    let courseDays = document.createElement("p");
+    courseDays.textContent = currentClass.date.split(/\s{2}/)[0];
+    courseDays.classList.add("course-sec-info");
+
+    let courseTime = document.createElement("p");
+    courseTime.textContent = currentClass.date.split(/\s{2}/)[1];
+    courseTime.classList.add("course-sec-info");
+
+    let courseCapacity = document.createElement("p");
+    courseCapacity.textContent = currentClass.availableSeats + "/" + currentClass.totalSeats;
+    courseCapacity.classList.add("course-sec-info");
+
+    let courseEnrollmentBox = document.createElement("input");
+    courseEnrollmentBox.type = "checkbox";
+    courseEnrollmentBox.className = "enrollBox";
+    courseEnrollmentBox.name = "enrollBox";
+    courseEnrollmentBox.classList.add("course-sec-info");
+    courseEnrollmentBox.addEventListener('change', openEnrollment);
+
+    let hiddenId = document.createElement("p");
+    hiddenId.textContent = currentClass.id;
+    hiddenId.id = "hiddenId";
+    hiddenId.classList.add("hidden");
+
+    classContainer.appendChild(courseSection);
+    classContainer.appendChild(courseCred);
+    classContainer.appendChild(courseDays);
+    classContainer.appendChild(courseTime);
+    classContainer.appendChild(courseCapacity);
+    if (currentClass.availableSeats === 0) {
+      courseEnrollmentBox.classList.add("hide");
+    }
+    classContainer.appendChild(courseEnrollmentBox);
+    classContainer.appendChild(hiddenId);
+
+    return classContainer;
+  }
+
+  function openEnrollment() {
+    if(this.checked) {
+      showEnrollButton(this);
+    } else {
+      let allEnrollBox = qsa('.enrollBox');
+      let allUnchecked = false;
+      for (let i = 0; i < allEnrollBox.length; i++) {
+        let currentEnrollBox = allEnrollBox[i];
+        if (currentEnrollBox.checked) {
+          allUnchecked = true;
+        }
+      }
+      if (!allUnchecked) {
+        qs('.enrollButton').classList.add("hidden");
+      } else {
+        console.log('there is still buttons remaining');
+      }
+    }
+  }
+
+  function showEnrollButton(checkBox) {
+    if (qs('.enrollButton') === null) {
+      console.log("button is null");
+      let enrollButton = document.createElement("button");
+      enrollButton.textContent = "Enroll";
+      enrollButton.classList.add("enrollButton");
+      enrollButton.addEventListener('click', enrollOfficial);
+      qs('.body-course').appendChild(enrollButton);
+    } else {
+      qs('.enrollButton').classList.remove("hidden");
+    }
+  }
+
+  async function enrollOfficial() {
+    console.log("you have clicked enroll");
+    if (enrollmentSafetyCheck()) {
+      console.log("succesful enroll");
+      let params = new FormData();
+      let username = localStorage.key(0);
+      let className = qsa('.title')[1].textContent.split(' - ')[0].trim();
+      let userId = id('hiddenId').textContent;
+      params.append("userName", username);
+      params.append("className", className);
+      params.append("userId", userId);
+      let response = await fetch("/enroll", {method: "POST", body: params});
+    }
+  }
+
+  function enrollmentSafetyCheck() {
+    // check if user is logged in
+    if (localStorage.length === 0) {
+      id("error-message-course").textContent = "You must be logged in to enroll.";
+      id("error-message-course").classList.add("error");
+      return false;
+    } else {
+      // check if user did not select more than 1.
+      let checkedBox = qsa('.enrollBox');
+      let countChecked = 0;
+      for (let i = 0; i < checkedBox.length; i++) {
+        if (checkedBox[i].checked) {
+          countChecked++;
+        }
+      }
+      if (countChecked > 1) {
+        id("error-message-course").textContent = "You cannot select more " +
+                                                "than one of the same course.";
+        id("error-message-course").classList.add("error");
+        return false;
+      }
+      // everything is good time to enroll!
+      return true;
+    }
+  }
+  /**
+   * Method that converts a given integer to its respective alphabet
+   * @param {Integer} index - Index representing the aphabet to be converted to
+   * @returns {String} - The alphabet that corresponds to the index.
+   */
+  function indexToAlphabet(index) {
+    return String.fromCharCode(65 + index);
+  }
+
+  /**
+   * Function that returns the course overview for a specific course.
+   * @param {Object} data - object that contains the course overview information
+   * @returns {Object} - DOM object that contains the course overview information
+   */
+  function constructCoursePageOverview(data) {
     let overviewContent = document.createElement("section");
     overviewContent.classList.add("overview-content");
 

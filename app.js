@@ -45,7 +45,9 @@ let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
 
 /** Reterieves all the classes alongside their information from the database */
 app.get("/getItems", async function(req, res) {
-  let query = "SELECT * FROM classes ORDER BY name DESC;";
+  let query = "SELECT * FROM classes " +
+              "GROUP BY shortName " +
+              "ORDER BY name DESC;";
   try {
     let db = await getDBConnection();
     let result = await db.all(query);
@@ -141,10 +143,8 @@ app.get("/itemDetails/:className", async function(req, res) {
     try {
       let query = "SELECT * FROM classes WHERE shortName = ?;";
       let db = await getDBConnection();
-      let result = await db.get(query, req.params.className);
-      if (result !== undefined) {
-        // removing id key because it isn't needed
-        delete result.id;
+      let result = await db.all(query, req.params.className);
+      if (result.length !== 0) {
         res.json(result);
         await closeDbConnection(db);
       } else {
@@ -168,6 +168,7 @@ app.post("/enrollCourse", async function(req, res) {
   // These are the two parameters to the form body object
   let userName = req.body.userName;
   let className = req.body.className;
+  let classId = req.body.id;
   if(userName) {
     // Checking the login status
     let query = "SELECT loginStatus FROM login WHERE username = ?;";
@@ -181,8 +182,8 @@ app.post("/enrollCourse", async function(req, res) {
       if(isUserLogin === "true") {
 
         // Note that classname is guranteed to be filled as client picks a class to make a request
-        let query2 = "SELECT * FROM classes WHERE name = ?;";
-        let classInfo = await db.get(query2, className);
+        let query2 = "SELECT * FROM classes WHERE shortName = ? AND id = ?;";
+        let classInfo = await db.get(query2, [className, classId]);
         if(classInfo !== undefined) {
 
           // The class does exist so now check its capacity, the date is grabbed to be used later
@@ -281,7 +282,7 @@ app.get("/search", async function(req, res) {
 
   // All possible filters
   let filterAll = [date, subject, credits, courseLevel];
-
+  console.log(filterAll);
   // Names for each of the values in the filter all array lined accordingly
   let filterNames = ["date", "subject", "credits", "courseLevel"];
   let validFilters = [];
@@ -293,7 +294,7 @@ app.get("/search", async function(req, res) {
 
       // Add column name to the front of each the values of the filter
       specificFilterArr.unshift(filterNames[i]);
-
+      console.log("i am here now");
       /**
        * Adding an column name to the zeros index of each array and do no
        */
