@@ -54,6 +54,7 @@
 
   function toggleCoursePage() {
     qsa('.title')[1].textContent = '';
+    qs('.body-course').textContent = '';
     id("error-message").textContent = '';
     id("pop-up-courses").classList.toggle("active");
     id("overlay2").classList.toggle("active");
@@ -75,18 +76,98 @@
       let response = await fetch("/itemDetails/" + courseName);
       await statusCheck(response);
       let data = await response.json();
-      constructCoursePage(data);
+
+      let h3OverviewTitle = document.createElement("h3");
+      h3OverviewTitle.textContent = "Course Overview";
+      h3OverviewTitle.classList.add("title-overview");
+
+      let coursePageOverviewDOM = constructCoursePageOverview(data);
+      let courseSections = constructCourseSection(data);
+
+      qs('.body-course').appendChild(h3OverviewTitle);
+      qs('.body-course').appendChild(coursePageOverviewDOM);
       console.log(data);
     } catch (err) {
       console.log(err);
     }
   }
 
-  function constructCoursePage(data) {
-    let overview = document.createElement("section");
-    overview.classList.add("overview");
-    let h3OverviewTitle = document.createElement("h3");
-    h3OverviewTitle.textContent = "Course Overview";
+  function constructCourseSection(data) {
+
+  }
+
+  function constructCoursePageOverview(data) {
+
+    let overviewContent = document.createElement("section");
+    overviewContent.classList.add("overview-content");
+
+    // container for course description
+    let containerDesc = document.createElement("section");
+    containerDesc.classList.add("containers");
+
+    let courseDescTitle = document.createElement("p");
+    courseDescTitle.textContent = "Course Description: ";
+    courseDescTitle.classList.add("bold");
+
+    let courseDesc = document.createElement("p");
+    courseDesc.textContent = data.description;
+    courseDesc.classList.add("course-desc");
+
+    containerDesc.appendChild(courseDescTitle);
+    containerDesc.appendChild(courseDesc);
+
+    // container for course credits
+    let containerCreds = document.createElement("section");
+    containerCreds.classList.add("containers");
+
+    let courseCreditsTitle = document.createElement("p");
+    courseCreditsTitle.textContent = "Course Credits: ";
+    courseCreditsTitle.classList.add("bold");
+
+    let courseCredits = document.createElement("p");
+    courseCredits.textContent = data.credits;
+    courseCredits.classList.add("course-desc");
+
+    containerCreds.appendChild(courseCreditsTitle);
+    containerCreds.appendChild(courseCredits);
+
+    // container for course level
+    let containerLevel = document.createElement("section");
+    containerLevel.classList.add("containers");
+
+    let courseLevelTitle = document.createElement("p");
+    courseLevelTitle.textContent = "Course Level:";
+    courseLevelTitle.classList.add("bold");
+
+    let courseLevel = document.createElement("p");
+    courseLevel.textContent = data.courseLevel;
+    courseLevel.classList.add("course-desc");
+
+    containerLevel.appendChild(courseLevelTitle);
+    containerLevel.appendChild(courseLevel);
+
+    // container for course gpa
+    let containerGPA = document.createElement("section");
+    containerGPA.classList.add("containers");
+
+    let averageGPATitle = document.createElement("p");
+    averageGPATitle.textContent = "Average GPA: ";
+    averageGPATitle.classList.add("bold");
+
+    let averageGPA = document.createElement("p");
+    averageGPA.textContent = data.avgGPA;
+    averageGPA.classList.add("course-desc");
+
+    containerGPA.appendChild(averageGPATitle);
+    containerGPA.appendChild(averageGPA);
+
+    // connecting all DOMS together.
+    overviewContent.appendChild(containerDesc);
+    overviewContent.appendChild(containerCreds);
+    overviewContent.appendChild(containerLevel);
+    overviewContent.appendChild(containerGPA);
+
+    return overviewContent;
   }
 
   /**
