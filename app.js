@@ -504,11 +504,25 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     * adding new "transaction(adding a class) to be mapped to a user up to date
     * course schedule.
     */
-    let newTransactionKey = "" + newCode;
+    let newTransactionKey = newCode;
 
     // Adding user new current schedule to course history
-    courseHistory[userName][newTransactionKey] = studentClasses;
-
+    let keys = Object.keys(courseHistory);
+    let isNew = true;
+    for (let i = 0; i < keys.length; i++) {
+      let currUsername = keys[i];
+      if (currUsername === userName) {
+        isNew = false;
+        let currTransactionObj = courseHistory[currUsername];
+        // inserting a new transactionKey for the new student class
+        currTransactionObj[newTransactionKey] = studentClasses;
+      }
+    }
+    if (isNew) {
+      courseHistory[userName] = {};
+      courseHistory[userName][newTransactionKey] = studentClasses;
+    }
+    
     await closeDbConnection(db);
     return newCode;
   } catch (error) {

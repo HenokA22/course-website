@@ -18,9 +18,18 @@
     id("login").addEventListener("click", login);
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
-    id("search-button").addEventListener("input", search);
+    id("search-button").addEventListener("click", fetchSearchBar);
     load();
     checkForFilter();
+  }
+
+  async function fetchSearchBar() {
+    try {
+      let searchTerm = id("course-input").value.trim();
+      console.log("Here is your search: " + searchTerm);
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   function checkForFilter() {
