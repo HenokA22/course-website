@@ -277,8 +277,12 @@
       let userId = id('hiddenId').textContent;
       params.append("userName", username);
       params.append("className", className);
-      params.append("userId", userId);
+      params.append("id", userId);
       let response = await fetch("/enroll", {method: "POST", body: params});
+      await statusCheck(response);
+      if (response.status === 200) {
+        // success display message that it was successful and after 2 seconds close the course page
+      }
     }
   }
 
