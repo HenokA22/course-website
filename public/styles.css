@@ -74,6 +74,10 @@ a {
   margin: 0 50px 0 10px;
 }
 
+#filter-container {
+  width: 15%;
+}
+
 #course-list, #searching-container {
   flex-grow: 1;
 }

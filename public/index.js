@@ -1,5 +1,15 @@
 "use strict";
 (function() {
+  let filterArrDate = [];
+  let filterArrSubject = [];
+  let filterArrCredit = [];
+  let filterArrCourseLevel = [];
+  let mainArray = {
+    "Course level": filterArrCourseLevel,
+    "Subjects": filterArrSubject,
+    "Credits": filterArrCredit,
+    "Days": filterArrDate
+  };
   window.addEventListener("load", init);
 
   /** Function that runs when the page is loaded and sets up other functions. */
@@ -20,14 +30,72 @@
   }
 
   function filterSearch() {
-    console.log(this);
-    if(this.checked) {
-      let label = document.querySelector('.label[for="${this.id}"]');
-      console.log(label);
-      console.log("You have marked this button check with value: ");
+    let category = this.parentNode.previousElementSibling.textContent.split(":")[0];
+    if (this.checked) {
+      buildSearch(category, this);
+    } else {
+      mainArray[category].shift();
+      buildSearch(category, null);
     }
   }
 
+  function buildSearch(category, checkbox) {
+    if(checkbox !== null) {
+      mainArray[category].unshift(checkbox.nextElementSibling.textContent);
+    }
+    console.log(mainArray);
+    console.log(isMainArrEmpty());
+    if (!isMainArrEmpty()) {
+      let buildQuery = "";
+      let keys = Object.keys(mainArray);
+      const keyPairing = {
+        "Days": "date",
+        "Credits": "credits",
+        "Subjects": "subject",
+        "Course level": "courseLevel"
+      };
+      for (let i = 0; i < keys.length; i++) {
+        let key = keys[i];
+        let currArr = mainArray[key];
+        if (currArr.length !== 0) {
+          // here we know there is a boxed checked in this section filter
+          buildQuery += (keyPairing[key] + "=" + JSON.stringify(currArr) + "\&");
+        }
+      }
+      // remove any potential last char which could be a &
+      if (buildQuery.endsWith("&")) {
+        buildQuery = buildQuery.slice(0, -1);
+      }
+      console.log(buildQuery);
+      fetchSearch(buildQuery);
+    }
+  }
+
+  async function fetchSearch(buildQuery) {
+    try {
+      let result = await fetch("/search?" + buildQuery);
+      await statusCheck(result);
+      if (result.status === 200) {
+        let data = await result.json();
+        console.log("success!");
+        console.log("here is your data: " + data.classes);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  function isMainArrEmpty() {
+    let keys = Object.keys(mainArray);
+    for (let i = 0; i < keys.length; i++) {
+      let key =keys[i]
+      let currArr = mainArray[key];
+      if (currArr.length !== 0) {
+        return false; // If any inner array is not empty, return false
+      }
+    }
+    return true; // If all inner arrays are empty, return true
+  }
 
   /**
    * Function is used on reload to check if the user is logged in. If so,
@@ -432,6 +500,7 @@
    * @returns {Object} - DOM object that contains the course information
    */
   function constructCourse(course) {
+    console.log(course);
     let courseContainer = document.createElement("article");
 
     let courseName = document.createElement("h2");
@@ -446,10 +515,18 @@
     let courseCredits = document.createElement("p");
     courseCredits.textContent = "Course Credits: " + course.credits;
 
+    let courseDays = document.createElement("p");
+    courseDays.textContent = "Course day: " + course.date.split(/\s{2}/)[0];
+
+    let courseSubject = document.createElement("p");
+    courseSubject.textContent = "Course Subject: " + course.subject;
+
     courseContainer.appendChild(courseName);
     courseContainer.appendChild(courseTitle);
     courseContainer.appendChild(courseLevel);
     courseContainer.appendChild(courseCredits);
+    courseContainer.appendChild(courseDays);
+    courseContainer.appendChild(courseSubject);
 
     return courseContainer;
   }
