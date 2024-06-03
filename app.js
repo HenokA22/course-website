@@ -332,27 +332,67 @@ app.get("/search", async function(req, res) {
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
-    console.log(query);
     let result = classQueryUsed ? await db.all(query, className) : await db.all(query);
 
+    // Empty query means that the user has mistakenly inputed data
+    if (result.length === 0) {
+      throw new Error("Invalid Query");
+    }
     let matchingSearchClasses = {"classes": result};
     res.json(matchingSearchClasses);
   } catch (error) {
-    console.error("Error:", error);
+    if (error.message === "Invalid Query") {
+      res.type("text").status(USER_ERROR_CODE)
+        .send("Invalid class name specified");
+    } else {
+      res.type("text").status(SERVER_ERROR_CODE)
+        .send("An error occurred on the server. Try again later.");
+    }
+  }
+});
 
-    /**
-     * TODO:
-     * Using the error message, send a response whether or not the error is by the user or the
-     *
-     * server.
-     *
-     * Should be accomplished by an if else block
-     */
-    //res.type()
+/*  PUT THIS HELPER METHOD IN THE FUNCTION LATER
+
+/**
+ * Creates an full query depending on the search / filter conditions specified
+ * @param {String} className - The name of specified class
+ * @param {boolean} classQueryUsed - A boolean flag representing whether the search contains
+ *                                    a class name.
+ * @param {String} query - An string representing a empty query
+ * @param {String[][]} validFilters - A 2D array containing information about the
+ * @returns - A newly assembled Query
+ / // fix lateer
+function createQuery(className, classQueryUsed, query, validFilters) {
+
+  if(className) {
+    classQueryUsed = true;
+
+    // Regular expression used to match any digit
+    const regex = /\d/;
+
+    // Test to see if search term is a short name or full name of a class
+    if(regex.test(className)) {
+
+      // Search used shortname
+      query += "SELECT * FROM classes WHERE (shortName = ?";
+      query = applyFiltersToQuery(query, validFilters);
+    } else {
+      query += "SELECT * FROM classes WHERE (name = ?";
+
+      // Regular class name used in search
+      query = applyFiltersToQuery(query, validFilters);
+    }
+  } else {
+
+    // reconstruct query based off data
+    query = "SELECT * FROM classes WHERE (";
+    query = applyFiltersToQuery(query, validFilters);
   }
 
-  // A good spot to apply print statements to test out query generation;
-});
+  return query;
+}
+
+*/
 
 /**
  * Applies filters to a translated search query from the UI
