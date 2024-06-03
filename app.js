@@ -271,7 +271,7 @@ app.post("/enrollCourse", async function(req, res) {
 // ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
 app.get("/search", async function(req, res) {
   let className = req.query.className;
-  let date = req.query.date; // Checkboxs on the front end: M W F in an array as a string
+  let date = req.query.date; // Checkbox on the front end: M W F in an array as a string
   let subject = req.query.subject; // an array of subjects as an string
   let credits = req.query.credits; // an array of credits as a string
   let courseLevel = req.query.courseLevel // An array course level on the front end as a string
@@ -332,8 +332,7 @@ app.get("/search", async function(req, res) {
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
-    console.log(query);
-    let result = classQueryUsed ? await db.all(query) : await db.all(query, className);
+    let result = classQueryUsed ? await db.all(query, className) : await db.all(query);
 
     let matchingSearchClasses = {"classes": result};
     res.json(matchingSearchClasses);
@@ -388,9 +387,14 @@ function applyFiltersToQuery(query, validFilters) {
     query += ")";
 
     // Check for another filter option needing to applied to query (This is pattern n - 1)
-    if (i < (validFilters[i].length - 1)) {
+    if (i < (validFilters.length - 1)) {
       query += " AND (";
     }
+  }
+
+  // This is for the case that the inner loop isn't applied (bad code practice for one off case)
+  if (validFilters.length === 0) {
+    query += ")";
   }
 
   query += " GROUP BY shortName;";
