@@ -267,7 +267,7 @@ app.post("/enrollCourse", async function(req, res) {
   }
 });
 
-// Performs a search on the data base for classes the match the search term and filters.
+// Performs a search on the data base for classes that match the search term and filters.
 // ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
 app.get("/search", async function(req, res) {
   let className = req.query.className;
@@ -292,9 +292,9 @@ app.get("/search", async function(req, res) {
 
       // Add column name to the front of each the values of the filter
       specificFilterArr.unshift(filterNames[i]);
-      console.log("i am here now");
+
       /**
-       * Adding an column name to the zeros index of each array and do no
+       * Adding an column name to the zeros index of each array
        */
       validFilters.push(specificFilterArr);
     }
@@ -306,7 +306,7 @@ app.get("/search", async function(req, res) {
     // Regular expression used to match any digit
     const regex = /\d/;
 
-    // Test to see if reg name or short name is the search terms
+    // Test to see if search term is a short name or full name of a class
     if(regex.test(className)) {
 
       // Search used shortname
@@ -367,7 +367,7 @@ function applyFiltersToQuery(query, validFilters) {
     let name = nameAndValuesForAFilter[0];
 
     // traversing the values of a filter
-    for (let j =  1; j < nameAndValuesForAFilter.length; j += 1) {
+    for (let j = 1; j < nameAndValuesForAFilter.length; j += 1) {
 
       // The query structure differs based on if the date filter is applied.
       if (name === "date") {
@@ -387,13 +387,13 @@ function applyFiltersToQuery(query, validFilters) {
     // Complete of the filters applied portion of the query with a closing parenthesis
     query += ")";
 
-    // Check for another filter option needing to applied to query
-    if (i !== (nameAndValuesForAFilter[i].length - 1)) {
+    // Check for another filter option needing to applied to query (This is pattern n - 1)
+    if (i < (validFilters[i].length - 1)) {
       query += " AND (";
     }
   }
 
-  query += ";";
+  query += " GROUP BY shortName;";
   return query;
 }
 
@@ -519,10 +519,9 @@ async function getStudentClassesInfo(db, currentCourses) {
 /**
  * Checks if there is a time conflict between two classes
  * @param {sqlite3.Database} db - The database object for the connection
- * @param {String} toBeEnrolledCourseDate - The dates that the request enrolled date
- *                                      lies on.
- * @param {String[]} currentCourses - An array of course that the user is current taking
- * @return {Boolean} - A boolean representing if a conflict does indeed occur, true if so, if not false
+ * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
+ * @param {String[]} currentCourses - An array of courses that the user is current taking
+ * @return - A boolean representing if a conflict does indeed occur, true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
   let conflictInSchedule = false;
