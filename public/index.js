@@ -9,7 +9,25 @@
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
     load();
+    checkForFilter();
   }
+
+  function checkForFilter() {
+    let allBoxes = document.querySelectorAll('.filter-check-boxes input[type="checkbox"]');
+    for (let i = 0; i < allBoxes.length; i++) {
+      allBoxes[i].addEventListener('change', filterSearch);
+    }
+  }
+
+  function filterSearch() {
+    console.log(this);
+    if(this.checked) {
+      let label = document.querySelector('.label[for="${this.id}"]');
+      console.log(label);
+      console.log("You have marked this button check with value: ");
+    }
+  }
+
 
   /**
    * Function is used on reload to check if the user is logged in. If so,
@@ -87,7 +105,6 @@
   async function fetchCoursePage() {
     try{
       let courseName = qsa('.title')[1].textContent.split(' - ')[0].trim();
-      console.log(courseName);
       let response = await fetch("/itemDetails/" + courseName);
       await statusCheck(response);
       let data = await response.json();
@@ -124,7 +141,6 @@
     //main body in which each class section will be in
     let overviewContentSec = document.createElement("section");
     overviewContentSec.classList.add("overview-content-sec");
-    console.log(data.length);
     for (let i = 0; i < data.length; i++) {
       let currentClass = data[i];
       let classSecDOM = constructCourseSectionHelper(currentClass, i);
@@ -184,7 +200,6 @@
    *                     to the main view.
    */
   function constructCourseSectionHelper(currentClass, index) {
-    console.log(currentClass);
     let classContainer = document.createElement("article");
     classContainer.classList.add("course-sec-detail");
 
@@ -248,15 +263,12 @@
       }
       if (!allUnchecked) {
         qs('.enrollButton').classList.add("hidden");
-      } else {
-        console.log('there is still buttons remaining');
       }
     }
   }
 
   function showEnrollButton(checkBox) {
     if (qs('.enrollButton') === null) {
-      console.log("button is null");
       let enrollButton = document.createElement("button");
       enrollButton.textContent = "Enroll";
       enrollButton.classList.add("enrollButton");
@@ -268,9 +280,7 @@
   }
 
   async function enrollOfficial() {
-    console.log("you have clicked enroll");
     if (enrollmentSafetyCheck()) {
-      console.log("succesful enroll");
       let params = new FormData();
       let username = localStorage.key(0);
       let className = qsa('.title')[1].textContent.split(' - ')[0].trim();
@@ -278,10 +288,28 @@
       params.append("userName", username);
       params.append("className", className);
       params.append("id", userId);
-      let response = await fetch("/enroll", {method: "POST", body: params});
-      await statusCheck(response);
+      let response = await fetch("/enrollCourse", {method: "POST", body: params});
       if (response.status === 200) {
         // success display message that it was successful and after 2 seconds close the course page
+        let successMsg = document.createElement("div");
+        successMsg.classList.add("success");
+        successMsg.textContent = "Success enrollment! Your enrollment receipt code is: \'" + await response.text() + "\'";
+
+        id('error-message-course').insertAdjacentElement('afterend', successMsg);
+
+        // uncheck the box
+        let allEnrollBox = qsa('.enrollBox');
+        for (let i = 0; i < allEnrollBox.length; i++) {
+          allEnrollBox[i].checked = false;
+        }
+
+        // after two seconds close the page for the user:
+        setTimeout(() =>{
+          toggleCoursePage();
+        }, 3000);
+      } else {
+        id("error-message-course").textContent = await response.text();
+        id("error-message-course").classList.add("error");
       }
     }
   }

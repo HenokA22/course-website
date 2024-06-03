@@ -189,15 +189,12 @@ app.post("/enrollCourse", async function(req, res) {
           // The class does exist so now check its capacity, the date is grabbed to be used later
           let totalSeatsVal = classInfo.availableSeats;
           let toBeEnrolledCourseDate = classInfo.date;
-          console.log("Date of the one we want to enroll: " + toBeEnrolledCourseDate);
           // Checking if space availability is valid
           if(totalSeatsVal > 0) {
 
             // The student can enroll meets the space requirements so now check schedule conflict
             let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
             let classResult = await db.all(query3, userName);
-            console.log("resultant from new join: ");
-            console.log(classResult);
             // An array of classes that the user is currently taking
             let currentCourses = [];
 
@@ -206,8 +203,6 @@ app.post("/enrollCourse", async function(req, res) {
               let oneMatch = classResult[i];
               currentCourses.push(oneMatch);
             }
-            console.log("pushing to currentCourses:");
-            console.log(currentCourses);
             // Check all the dates of each class
             let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
 
@@ -230,17 +225,16 @@ app.post("/enrollCourse", async function(req, res) {
                   i = currentCourses.length;
                 }
               }
-              console.log("is class unique: " + addingAnNewClass);
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
 
                 // Test this later
-                let newCode = await helperFunction(db, totalSeatsVal, className, userName, currentCourses, classId);
+                let newCode = await helperFunction(db, className, userName, currentCourses, classId);
                 res.type("text").status(SUCCESS_CODE)
                 .send("Successfully added course, this is the confirmation code: " + newCode);
               } else {
                 res.type("text").status(USER_ERROR_CODE)
-                  .send("Cannot enroll in a class you have already taken.");
+                  .send("Cannot enroll in a class you have already enrolled.");
               }
             } else {
               res.type("text").status(USER_ERROR_CODE)
@@ -409,16 +403,17 @@ function applyFiltersToQuery(query, validFilters) {
  * state of the database with the client chosen course, 2 save a snapshot of the logged in user
  * code.
  * @param {sqlite3.Database} db - The SQLite database connection.
- * @param {Number} totalSeatsVal - The current value of the user selected course to enroll within
  * @param {String} className - Name of the class to the user selected course to enroll within
  * @param {String} userName - The username of the logged in user.
  * @param {String[]} currentCourses - An array of courses that the user is currently taking
+ * @param {Integer} id - An id representing the id of the course we are enrolling in
+ * @returns {String} - Represents a randomized 6 digit string code to be sent to the user.
  */
-async function helperFunction(db, totalSeatsVal, className, userName, currentCourses, id) {
+async function helperFunction(db, className, userName, currentCourses, id) {
   try {
     // Updating the database available seat count now
-    let updateSeatCount = "UPDATE classes SET availableSeats = " + (totalSeatsVal - 1) +
-    " WHERE name = ? AND id = ?;";
+    let updateSeatCount = "UPDATE classes SET availableSeats = availableSeats - 1" +
+    " WHERE shortName = ? AND id = ?;";
     await db.run(updateSeatCount, [className, id]);
 
     // No need to store metadata into a variable (look later to remove it)
@@ -527,14 +522,13 @@ async function getStudentClassesInfo(db, currentCourses) {
  * @param {String} toBeEnrolledCourseDate - The dates that the request enrolled date
  *                                      lies on.
  * @param {String[]} currentCourses - An array of course that the user is current taking
- * @return - A boolean representing if a conflict does indeed occur, true if so, if not false
+ * @return {Boolean} - A boolean representing if a conflict does indeed occur, true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
   let conflictInSchedule = false;
   try {
     for (let i = 0; i < currentCourses.length; i += 1) {
       let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i]);
-      console.log(santizedInfo);
 
        /**
         * Check each day the to be enrolled course takes places against logged in user
@@ -572,7 +566,6 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
  */
 async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
   try {
-    console.log(currentCourse);
     // Accessing the nested date value from result of .get()
     let dateQuery = "SELECT date FROM classes WHERE shortName = ? AND id = ?;"
     let dateResultOB = await db.get(dateQuery, [currentCourse.takingCourse, currentCourse.classId]);
@@ -586,8 +579,7 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
     let selectedCourseTimes = selectedCourseDateSplit[1];
     let currentCourseDays = currentCourseDateSplit[0];
     let currentCourseTimes = currentCourseDateSplit[1];
-    console.log("To be enrolled day: " + selectedCourseDays);
-    console.log("To be enrolled Time: " + selectedCourseTimes);
+
     // Splitting individual dates among each other
     // courseDays: [M, W, T] (users course)
     // currentCourseDays: [T, Th] (to be enrolled course)
@@ -615,48 +607,6 @@ app.get("/viewTransaction", async function(req, res) {
    */
 });
 
-function isObject(value) {
-  return value !== null && typeof value === 'object';
-}
-
-/**
- * Converts a 12-hour format time (e.g., "9:30 am") to the number of minutes since midnight.
- * @param {string} time - The time in 12-hour format (e.g., "9:30 am" or "10:00 pm").
- * @returns {number} - The number of minutes since midnight.
- */
-function convertToMinutes(time) {
-  // Split the time into the main time part and the period (am/pm)
-  let [timePart, period] = time.split(" ");
-  // Split the main time part into hours and minutes
-  let [hours, minutes] = timePart.split(":").map(Number);
-
-  // Convert hours to 24-hour format if period is pm and it's not 12 pm
-  if (period === "pm" && hours !== 12) {
-    hours += 12;
-  // Convert hours to 0 if period is am and it's 12 am
-  } else if (period === "am" && hours === 12) {
-    hours = 0;
-  }
-
-  // Return the total minutes since midnight
-  return hours * 60 + minutes;
-}
-
-/**
- * Parses a time range string (e.g., "9:30-10:30 am") into an object with start and end times in minutes since midnight.
- * @param {string} timeRange - The time range in the format "x:xx-x:xx am/pm".
- * @returns {Object} - An object with the start and end times in minutes since midnight.
- */
-function parseTimeRange(timeRange) {
-  // Split the time range into start and end times
-  let [startTime, endTime] = timeRange.split("-");
-  // Convert the start and end times to minutes since midnight
-  return {
-    start: convertToMinutes(startTime),
-    end: convertToMinutes(endTime)
-  };
-}
-
 /**
  * Checks if two time ranges overlap.
  * @param {string} range1 - The first time range in the format "x:xx-x:xx am/pm".
@@ -664,16 +614,37 @@ function parseTimeRange(timeRange) {
  * @returns {boolean} - True if the time ranges overlap, false otherwise.
  */
 function timesOverlap(range1, range2) {
-  // Parse the first time range into start and end times in minutes since midnight
-  // An object
-  const { start: start1, end: end1 } = parseTimeRange(range1);
-  console.log("Start time: " + start1 + " End time: " + end1);
-  // Parse the second time range into start and end times in minutes since midnight
-  const { start: start2, end: end2 } = parseTimeRange(range2);
-  console.log("Start time2: " + start2 + " End time:2 " + end2);
+  // ex:
+  // '13:30-15:30'
+  // '9:30-10:30'
+  let time1Arr = range1.split("-");
+  let time2Arr = range2.split("-");
 
-  // Check if the time ranges overlap
-  return start1 < end2 && start2 < end1;
+  let range1StartTime = time1Arr[0];
+  let range1EndTime = time1Arr[1];
+
+  let range2StartTime = time2Arr[0];
+  let range2EndTime = time2Arr[1];
+
+  // sort the star tand end times into a single array
+  let allTimes = [
+    [range1StartTime, range1EndTime],
+    [range2StartTime, range2EndTime]
+  ].sort((a, b) => {
+    let [aStartHour, aStartMinute] = a[0].split(":").map(Number);
+    let [bStartHour, bStartMinute] = b[0].split(":").map(Number);
+
+    if (aStartHour === bStartHour) {
+      // if the hours are equal compare the minutes
+      return aStartMinute - bStartMinute;
+    }
+    return aStartHour - bStartHour;
+  });
+
+  // check if the end time of the irst range is greater than the
+  // start time of the second range. If so we know there is a overlap.
+  let isOverlap = allTimes[1][0] < allTimes[0][1];
+  return isOverlap;
 }
 
 /**

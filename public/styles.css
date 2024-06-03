@@ -230,6 +230,12 @@ a {
   font-weight: bold;
 }
 
+.success {
+  text-align: center;
+  color: lightgreen;
+  font-weight: bold;
+}
+
 /* Used in constructCoursePageOverview to display each sec tag as flex */
 .containers {
   display: flex;
