@@ -14,11 +14,11 @@ const DEFAULT_PORT = 8000;
 let confirmationCodes = new Set();
 
 /**
- * Going to be an array of JS objects that represent a key value pairing between transactions and
+ * Going to be an object of users to JS objects that contain all the past course information
  * a users current courses
  *
  */
-let courseHistory = [];
+let courseHistory = {};
 
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true})); // built-in middleware
@@ -37,8 +37,9 @@ let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
  *
  * The date field in format of D D D  x:xx-x:xx period(am/pm)
  *
- * course history: Each value is formated as an Array of JS objects that are in the form
- * {
+ * course history: Each key is a username is formated as an JS objects. The representation is as
+ * follows.  that are in the form
+ * username: {
  *   transactionCode: currentCourseObject (The value from the "currentCourses" attribute in the db);
  * }
  */
@@ -271,14 +272,14 @@ app.post("/enrollCourse", async function(req, res) {
 // ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
 app.get("/search", async function(req, res) {
   let className = req.query.className;
-  let date = req.query.date; // Checkbox on the front end: M W F in an array as a string
-  let subject = req.query.subject; // an array of subjects as an string
-  let credits = req.query.credits; // an array of credits as a string
+  let date = req.query.date; // Checkbox on the front end: M W F in an array as a string ["M", "W"]
+  let subject = req.query.subject; // an array of subjects as an string (e.g ["Computer Science"])
+  let credits = req.query.credits; // an array of credits as a string (e.g [5])
   let courseLevel = req.query.courseLevel // An array course level on the front end as a string
   let query = "";
   let classQueryUsed = false;
 
-  // All possible filters
+  // All possible filters ()
   let filterAll = [date, subject, credits, courseLevel];
 
   // Names for each of the values in the filter all array lined accordingly
@@ -300,30 +301,10 @@ app.get("/search", async function(req, res) {
     }
   }
 
-  if(className) {
-    classQueryUsed = true;
-
-    // Regular expression used to match any digit
-    const regex = /\d/;
-
-    // Test to see if search term is a short name or full name of a class
-    if(regex.test(className)) {
-
-      // Search used shortname
-      query += "SELECT * FROM classes WHERE (shortName = ?";
-      query = applyFiltersToQuery(query, validFilters);
-    } else {
-      query += "SELECT * FROM classes WHERE (name = ?";
-
-      // Regular class name used in search
-      query = applyFiltersToQuery(query, validFilters);
-    }
-  } else {
-
-    // reconstruct query based off data
-    query = "SELECT * FROM classes WHERE (";
-    query = applyFiltersToQuery(query, validFilters);
-  }
+  // Valid Filters after completions should be ["date", "M", "F"] for example
+  let result = createQuery(className, classQueryUsed, query, validFilters);
+  query = result[0];
+  classQueryUsed = result[1];
 
   try {
     let db = await getDBConnection();
@@ -351,21 +332,55 @@ app.get("/search", async function(req, res) {
   }
 });
 
-/*  PUT THIS HELPER METHOD IN THE FUNCTION LATER
+/** Sends back information of entire history of saved user schedules */
+app.get("/previousTransactions", async function(req, res) {
+  // Check if username and passaword are in database
+  let username = req.body.username;
+
+  // Checking the login status
+  let query = "SELECT loginStatus FROM login WHERE username = ?;";
+  // have a way to denote whether or not the user is signed in.
+  try {
+  let db = await getDBConnection();
+  let result = await db.get(query, username);
+
+  // Extracting the text (true / false)
+  let isUserLogin = result.loginStatus;
+  if (isUserLogin === "true") {
+    /**
+     * Get all schedules of courses for this user
+     */
+
+    let userPastSchedules = courseHistory[username];
+
+    // Sending back all users past -- "transactions" -- course information
+    res.json(userPastSchedules);
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+        .send("You are not logged in. Please sign in");
+  }
+  } catch (error) {
+  // an error occured with one of the queries here
+  // Change this later
+  console.log(error);
+  }
+});
+
 
 /**
  * Creates an full query depending on the search / filter conditions specified
- * @param {String} className - The name of specified class
- * @param {boolean} classQueryUsed - A boolean flag representing whether the search contains
- *                                    a class name.
+ * @param {String} className - The search term used in the search bar
+ * @param {boolean} classQueryUsed - A boolean flag representing whether the search bar contains
+ *                                    a value
  * @param {String} query - An string representing a empty query
- * @param {String[][]} validFilters - A 2D array containing information about the
- * @returns - A newly assembled Query
- / // fix lateer
+ * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
+ * @returns - A array containing a newly assembled Query along with whether or not a term is used
+ *            in the search term. The latter is represented by a boolean
+ */
 function createQuery(className, classQueryUsed, query, validFilters) {
-
+  let searchBarNotEmpty = classQueryUsed
   if(className) {
-    classQueryUsed = true;
+    searchBarNotEmpty = true;
 
     // Regular expression used to match any digit
     const regex = /\d/;
@@ -388,11 +403,9 @@ function createQuery(className, classQueryUsed, query, validFilters) {
     query = "SELECT * FROM classes WHERE (";
     query = applyFiltersToQuery(query, validFilters);
   }
-
-  return query;
+  return [query, searchBarNotEmpty];
 }
 
-*/
 
 /**
  * Applies filters to a translated search query from the UI
@@ -478,10 +491,10 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     // creates the code
     let newCode = createCode();
 
-    // Gather all the information for each course and add it courseHistory array
+    // Gather all the information for each course and add it to courseHistory array
 
     /**
-    * Grabing information from each course the student take putting that into an object
+    * Grabing information from each course the student is taking putting that into an object
     * Then applying then assembling that into a larger array that represents what the
     * student is currently taking.
     */
@@ -492,8 +505,9 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     * course schedule.
     */
     let newTransactionKey = "" + newCode;
-    let newTransactionStamp = {[newTransactionKey]:  studentClasses};
-    courseHistory.push(newTransactionStamp);
+
+    // Adding user new current schedule to course history
+    courseHistory[userName][newTransactionKey] = studentClasses;
 
     await closeDbConnection(db);
     return newCode;
@@ -527,7 +541,6 @@ function createCode() {
       invalidCode = false;
     }
   }
-
   return newCode;
 }
 
