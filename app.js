@@ -280,7 +280,7 @@ app.get("/search", async function(req, res) {
 
   // All possible filters
   let filterAll = [date, subject, credits, courseLevel];
-  console.log(filterAll);
+
   // Names for each of the values in the filter all array lined accordingly
   let filterNames = ["date", "subject", "credits", "courseLevel"];
   let validFilters = [];
@@ -332,6 +332,7 @@ app.get("/search", async function(req, res) {
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
+    console.log(query);
     let result = classQueryUsed ? await db.all(query, className) : await db.all(query);
 
     let matchingSearchClasses = {"classes": result};
@@ -373,6 +374,8 @@ function applyFiltersToQuery(query, validFilters) {
         //console.log(nameAndValuesForAFilter[j]);
         console.log(nameAndValuesForAFilter);
         query += name + " LIKE \"%" +  nameAndValuesForAFilter[j] + "%\"";
+      } else if (name === "subject") {
+        query += name + " = " + "\"" + nameAndValuesForAFilter[j] + "\"";
       } else {
         query += name + " = " + nameAndValuesForAFilter[j];
       }
