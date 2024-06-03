@@ -560,10 +560,10 @@ async function getStudentClassesInfo(db, currentCourses) {
     for (let i = 0; i < currentCourses.length; i += 1) {
 
       // Query to get information about the current course
-      let classInfoQuery = "SELECT date, availableSeats, subject, description FROM classes WHERE shortName = ?";
+      let classInfoQuery = "SELECT date, availableSeats, subject, description FROM classes WHERE shortName = ? AND id = ?;";
 
       // Execute the query to get class information
-      let classInfoResult = await db.get(classInfoQuery, currentCourses[i].takingCourse);
+      let classInfoResult = await db.get(classInfoQuery, [currentCourses[i].takingCourse, currentCourses[i].classId]);
 
       // Create a snapshot object for the current course and add it to studentClasses array
       let newCourseHistorySnapShot = { [currentCourses[i].takingCourse]: classInfoResult };

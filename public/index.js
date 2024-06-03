@@ -18,6 +18,7 @@
     id("login").addEventListener("click", login);
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
+    id("search-button").addEventListener("input", search);
     load();
     checkForFilter();
   }
@@ -43,8 +44,6 @@
     if(checkbox !== null) {
       mainArray[category].unshift(checkbox.nextElementSibling.textContent);
     }
-    console.log(mainArray);
-    console.log(isMainArrEmpty());
     if (!isMainArrEmpty()) {
       let buildQuery = "";
       let keys = Object.keys(mainArray);
@@ -66,8 +65,11 @@
       if (buildQuery.endsWith("&")) {
         buildQuery = buildQuery.slice(0, -1);
       }
-      console.log(buildQuery);
       fetchSearch(buildQuery);
+    } else {
+      let classList = id("classes");
+      classList.innerHTML = '';
+      load();
     }
   }
 
@@ -77,8 +79,24 @@
       await statusCheck(result);
       if (result.status === 200) {
         let data = await result.json();
-        console.log("success!");
-        console.log("here is your data: " + data.classes);
+        // check if the response back is a empty array if so we need to display
+        // there are no class for the specified filters.
+        let classList = id("classes");
+        if (data.classes.length === 0) {
+          classList.innerHTML = '';
+          let noClass = document.createElement("h2");
+          noClass.textContent = "No classes found for the specified filters/search.";
+          noClass.classList.add('error');
+          classList.appendChild(noClass);
+        } else {
+          classList.innerHTML = '';
+          for (let i = 0; i < data.classes.length; i++) {
+            let currObj = data.classes[i];
+            let currCourseDOM = constructCourse(currObj);
+            currCourseDOM.addEventListener('click', openCourse);
+            classList.appendChild(currCourseDOM);
+          }
+        }
       }
     } catch (err) {
       console.log(err);
