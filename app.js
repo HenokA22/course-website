@@ -218,7 +218,11 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
         return;
       }
 
-      let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
+      let conflictInScheduleResult = await checkConflict(
+        db,
+        toBeEnrolledCourseDate,
+        currentCourses
+      );
 
       if (!conflictInScheduleResult) {
         checkConflictHelper(db, currentCourses, className, userName, classId, res);
@@ -237,7 +241,8 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
 }
 
 /**
- * Function that retrieves class information from the database and sends appropriate response if not found
+ * Function that retrieves class information from the database and sends
+ * appropriate response if not found
  * @param {Object} db - SQLite database connection
  * @param {String} className - name of the short name class
  * @param {Integer} classId - id of the short name class
@@ -256,7 +261,8 @@ async function getClassInfo(db, className, classId, res) {
 }
 
 /**
- * Function that retrieves current courses of the user from the database and sends appropriate response if not found
+ * Function that retrieves current courses of the user from the database
+ * and sends appropriate response if not found
  * @param {Object} db - SQLite database connection
  * @param {String} userName - name of the user
  * @param {Object} res - response object used to send back to the client
