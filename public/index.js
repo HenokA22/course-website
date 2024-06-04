@@ -336,8 +336,8 @@
         id("display-login").classList.add("hidden");
         id("login").classList.add("hidden");
         id("signout").classList.remove("hidden");
-        id("displayUser").textContent = "Welcome, " + key;
-        id("displayUser").classList.remove("hidden");
+        id("display-user").textContent = "Welcome, " + key;
+        id("display-user").classList.remove("hidden");
       } else {
         signout();
       }
