@@ -56,11 +56,13 @@ a {
   margin-bottom: 20px;
 }
 
-#login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover, #signout:hover, #display-user:hover {
+#login:hover, #display-login:hover, #logo:hover {
   background-color: lightgrey;
 }
 
-
+#visual-schedule:hover, #signout:hover, #display-user:hover {
+  background-color: lightgray;
+}
 
 #main-body {
   display: flex;
@@ -179,7 +181,7 @@ a {
   border-bottom: 1px solid black;
 }
 
-.pop-up-header .title, .pop-up-header2 .title, .title2{
+.pop-up-header .title, .pop-up-header2 .title, .title2 {
   font-size: 1.5rem;
   font-weight: bold;
 }
@@ -236,21 +238,23 @@ a {
   display: flex;
 }
 
-/* Used in constructCoursePageOverview to display the section of overview in bold*/
+/* Used in constructCoursePageOverview to display the section of overview in bold */
 .bold {
   flex: 0 0 150px;
   text-align: right;
   font-weight: bold;
 }
 
-/* Used in constructCoursePageOverview to display the description section of overview in normal text */
+/* Used in constructCoursePageOverview to display the description section of overview
+  in normal text */
 .course-desc {
   flex: 1;
   padding-left: 20px;
   text-align: left;
 }
 
-/* Used in constructCoursePageOverview this is the overall tag that all the overview detail will be in*/
+/* Used in constructCoursePageOverview this is the overall tag that all the overview detail
+ will be in */
 .overview-content {
   border: none;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
@@ -295,7 +299,8 @@ a {
   margin-right: 10px;
 }
 
-/* Used in constructCourseSectionHelper to style the section header of each section box of the DOM */
+/* Used in constructCourseSectionHelper to style the section header of each section box of
+  the DOM */
 .course-sec-header {
   flex: 0 0 100px;
   text-align: center;
@@ -345,6 +350,8 @@ a {
 .pop-up-body-enroll {
   background-color: #4d307f;
   padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .enrolled-content {
@@ -363,11 +370,6 @@ a {
   color: white;
   font-size: 1.5rem;
   font-weight: bold;
-}
-
-.pop-up-body-enroll {
-  max-height: 70vh;
-  overflow-y: auto;
 }
 
 #reset-button {
