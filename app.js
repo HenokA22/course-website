@@ -211,19 +211,16 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
     }
     let totalSeatsVal = classInfo.availableSeats;
     let toBeEnrolledCourseDate = classInfo.date;
-
     if (totalSeatsVal > 0) {
       let currentCourses = await getCurrentCourses(db, userName, res);
       if (!currentCourses) {
         return;
       }
-
       let conflictInScheduleResult = await checkConflict(
         db,
         toBeEnrolledCourseDate,
         currentCourses
       );
-
       if (!conflictInScheduleResult) {
         checkConflictHelper(db, currentCourses, className, userName, classId, res);
       } else {
