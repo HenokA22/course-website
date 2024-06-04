@@ -27,7 +27,7 @@ body {
   align-items: center;
 }
 
-#login, #display-login, #logo, #visual-schedule, #signout, #displayUser {
+#login, #display-login, #logo, #visual-schedule, #signout, #display-user {
   color: white;
   height: 100%;
   width: auto;
@@ -44,20 +44,23 @@ a {
 }
 
 #logo {
-  margin-top: 0;
+  margin-top: auto;
 }
 
 #logo-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   background-color: #4d307f;
   height: 80px;
   margin-bottom: 20px;
 }
 
-#login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover, #signout:hover, #displayUser:hover {
+#login:hover, #display-login:hover, #logo:hover, #visual-schedule:hover, #signout:hover, #display-user:hover {
   background-color: lightgrey;
 }
+
+
 
 #main-body {
   display: flex;
