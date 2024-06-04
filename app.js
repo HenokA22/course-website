@@ -27,11 +27,6 @@ app.use(express.json()); // built-in middleware
 // for multipart/form-data (required with FormData)
 app.use(multer().none()); // requires the "multer" module
 
-let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
-                                              "subject": "English",
-                                              "description": "Writing papers communicating information and opinion to develop accurate, competent, and effective expression."}
-                                            };
-
 
 /**
  *
@@ -40,11 +35,11 @@ let obj = {"Intermediate Expository Writing": { "date": "T Th  9:30-10:30 am",
  * course history: Each key is a username is formated as an JS objects. The representation is as
  * follows.  that are in the form
  * username: {
- *   transactionCode: currentCourseObject (The value from the "currentCourses" attribute in the db);
+ *   transactionCode: currentCourse (The value from the "currentCourses" attribute in the db);
  * }
  */
 
-/** Reterieves all the classes alongside their information from the database */
+/** Retrives all the classes alongside their information from the database */
 app.get("/getItems", async function(req, res) {
   let query = "SELECT * FROM classes " +
               "GROUP BY shortName " +
@@ -132,7 +127,7 @@ app.post("/login", async function(req, res) {
   }
 });
 
-// Feature #3 (Similar to feature one but restricted to one row)
+// Provides more information on a specified course
 app.get("/itemDetails/:className", async function(req, res) {
   /**
    * Get further information about an item, should be in the form of a JSON object
@@ -231,6 +226,7 @@ app.post("/enrollCourse", async function(req, res) {
 
                 // Test this later
                 let newCode = await helperFunction(db, className, userName, currentCourses, classId);
+                await closeDbConnection(db);
                 res.type("text").status(SUCCESS_CODE)
                 .send("Successfully added course, this is the confirmation code: " + newCode);
               } else {
@@ -302,10 +298,9 @@ app.get("/search", async function(req, res) {
   }
 
   // Valid Filters after completions should be ["date", "M", "F"] for example
-  let result = createQuery(className, classQueryUsed, query, validFilters);
+  let result = await createQuery(className, classQueryUsed, query, validFilters);
   query = result[0];
   classQueryUsed = result[1];
-
   try {
     let db = await getDBConnection();
 
@@ -313,13 +308,15 @@ app.get("/search", async function(req, res) {
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
-    let result = classQueryUsed ? await db.all(query, className) : await db.all(query);
+    console.log(query);
+    let result = classQueryUsed ? await db.all(query, `%${className}%`) : await db.all(query);
 
     // Empty query means that the user has mistakenly inputed data
     if (result.length === 0) {
       throw new Error("Invalid Query");
     }
     let matchingSearchClasses = {"classes": result};
+    await closeDbConnection(db);
     res.json(matchingSearchClasses);
   } catch (error) {
     if (error.message === "Invalid Query") {
@@ -341,31 +338,31 @@ app.get("/previousTransactions", async function(req, res) {
   let query = "SELECT loginStatus FROM login WHERE username = ?;";
   // have a way to denote whether or not the user is signed in.
   try {
-  let db = await getDBConnection();
-  let result = await db.get(query, username);
+    let db = await getDBConnection();
+    let result = await db.get(query, username);
 
-  // Extracting the text (true / false)
-  let isUserLogin = result.loginStatus;
-  if (isUserLogin === "true") {
-    /**
-     * Get all schedules of courses for this user
-     */
+    // Extracting the text (true / false)
+    let isUserLogin = result.loginStatus;
+    if (isUserLogin === "true") {
+      /**
+       * Get all schedules of courses for this user
+       */
 
-    let userPastSchedules = courseHistory[username];
+      let userPastSchedules = courseHistory[username];
+      await closeDbConnection(db);
 
-    // Sending back all users past -- "transactions" -- course information
-    res.json(userPastSchedules);
-  } else {
-    res.type("text").status(USER_ERROR_CODE)
-        .send("You are not logged in. Please sign in");
-  }
+      // Sending back all users past -- "transactions" -- course information
+      res.json(userPastSchedules);
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+          .send("You are not logged in. Please sign in");
+    }
   } catch (error) {
   // an error occured with one of the queries here
   // Change this later
   console.log(error);
   }
 });
-
 
 /**
  * Creates an full query depending on the search / filter conditions specified
@@ -375,11 +372,21 @@ app.get("/previousTransactions", async function(req, res) {
  * @param {String} query - An string representing a empty query
  * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
  * @returns - A array containing a newly assembled Query along with whether or not a term is used
- *            in the search term. The latter is represented by a boolean
+ *            in the search term. The latter is represented by a boolean.
  */
-function createQuery(className, classQueryUsed, query, validFilters) {
-  let searchBarNotEmpty = classQueryUsed
-  if(className) {
+async function createQuery(className, classQueryUsed, query, validFilters) {
+  let searchBarNotEmpty = classQueryUsed;
+  let isPartial = await determinePartialSearch(className);
+  console.log(isPartial);
+
+  if(isPartial) {
+    searchBarNotEmpty = true;
+    console.log("in partial flow");
+    // Always use shortName
+    query += "SELECT * FROM classes WHERE (shortName LIKE ?";
+    query = applyFiltersToQuery(query, validFilters);
+  } else if(className) {
+    console.log("not in partial flow");
     searchBarNotEmpty = true;
 
     // Regular expression used to match any digit
@@ -389,10 +396,10 @@ function createQuery(className, classQueryUsed, query, validFilters) {
     if(regex.test(className)) {
 
       // Search used shortname
-      query += "SELECT * FROM classes WHERE (shortName = ?";
+      query += "SELECT * FROM classes WHERE (shortName LIKE ?";
       query = applyFiltersToQuery(query, validFilters);
     } else {
-      query += "SELECT * FROM classes WHERE (name = ?";
+      query += "SELECT * FROM classes WHERE (name LIKE ?";
 
       // Regular class name used in search
       query = applyFiltersToQuery(query, validFilters);
@@ -406,6 +413,30 @@ function createQuery(className, classQueryUsed, query, validFilters) {
   return [query, searchBarNotEmpty];
 }
 
+/**
+ * Determines whether or not a search input is incomplete
+ * @param {String} className - The search term used in the search bar
+ * @returns - A boolean that returns false if search input contains a complete short name or regular
+ *            name. Vice versa true if the input is incomplete
+ */
+async function determinePartialSearch(className) {
+  let db = await getDBConnection();
+  let fullNameQuery = "SELECT name FROM classes WHERE name = ? GROUP BY name";
+  let shortNameQuery = "SELECT shortName FROM classes WHERE shortName = ? GROUP BY shortName";
+  let returnBool;
+  try {
+    let fullNameResult = await db.get(fullNameQuery, className);
+    let shortNameResult = await db.get(shortNameQuery, className);
+
+    // If both are not queries not success then
+    returnBool = (fullNameResult === undefined && shortNameResult === undefined) ? true : false;
+  } catch (error) {
+    console.error("Error:", error.message);
+  }
+  await closeDbConnection(db);
+  return returnBool;
+}
+
 
 /**
  * Applies filters to a translated search query from the UI
@@ -414,10 +445,20 @@ function createQuery(className, classQueryUsed, query, validFilters) {
  * @returns - Completed search query with filters applied
  */
 function applyFiltersToQuery(query, validFilters) {
+  console.log(validFilters.length);
+  console.log("here");
   // This double for loop generates the search/filter query
   for (let i = 0; i < validFilters.length; i += 1) {
     let nameAndValuesForAFilter = validFilters[i];
     let name = nameAndValuesForAFilter[0];
+
+    /**
+     * Fenceposting issue with first filter appendement if query contains a classname (bad code
+     * quality -- in a time crunch)
+     */
+    if ((i === 0) && (query.charAt(query.length - 1) === '?')) {
+      query += ") AND ("
+    }
 
     // traversing the values of a filter
     for (let j = 1; j < nameAndValuesForAFilter.length; j += 1) {
@@ -453,7 +494,7 @@ function applyFiltersToQuery(query, validFilters) {
     query += ")";
   }
 
-  query += " GROUP BY shortName;";
+  query += ";";
   return query;
 }
 
@@ -522,7 +563,7 @@ async function helperFunction(db, className, userName, currentCourses, id) {
       courseHistory[userName] = {};
       courseHistory[userName][newTransactionKey] = studentClasses;
     }
-    
+
     await closeDbConnection(db);
     return newCode;
   } catch (error) {
