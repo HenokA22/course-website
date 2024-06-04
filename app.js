@@ -455,10 +455,10 @@ async function sendTransactionHelper(username, query, res) {
 /**
  * Creates an full query depending on the search / filter conditions specified
  * @param {String} className - The search term used in the search bar
- * @param {boolean} classQueryUsed - A boolean flag representing whether the search bar contains
+ * @param {Boolean} classQueryUsed - A boolean flag representing whether the search bar contains
  *                                    a value
  * @param {String} query - An string representing a empty query
- * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
+ * @param {Object} validFilters - A 2D array containing information about which filters to apply
  * @param {Object} res - response object used to send back to the client
  * @returns {Object} - A array containing a newly assembled Query along with
  *                     whether or not a term is used in the search term. The latter is represented
@@ -495,7 +495,7 @@ async function createQuery(className, classQueryUsed, query, validFilters, res) 
  * @param {String} regex - regular expressed used to match any digit
  * @param {String} query - current query used in createQuery
  * @param {String} className - name of the class
- * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
+ * @param {Object} validFilters - A 2D array containing information about which filters to apply
  * @returns {String} - returning back the string query after modification
  */
 function helperCreateQuery(regex, query, className, validFilters) {
@@ -645,10 +645,10 @@ async function helperFunction(db, className, userName, currentCourses, id, res) 
     currentCourses = await db.all(newClassRes, userName);
 
     /**
-      * Grabing information from each course the student is taking putting that into an object
-      * Then applying then assembling that into a larger array that represents what the
-      * student is currently taking.
-      */
+     * Grabing information from each course the student is taking putting that into an object
+     * Then applying then assembling that into a larger array that represents what the
+     * student is currently taking.
+     */
     let studentClasses = await getStudentClassesInfo(db, currentCourses, res);
 
     helperConstructCourseHistory(newCode, studentClasses, userName);
@@ -695,6 +695,7 @@ function helperConstructCourseHistory(newCode, studentClasses, userName) {
 const RANGE = 6;
 const MAX_ASCII = 126;
 const MIN_ASCII = 33;
+
 /**
  * Creates a random 6 digits code to distigush a new class enrollement for a student
  * @returns {String} - A string that is the code itself
@@ -766,7 +767,8 @@ async function getStudentClassesInfo(db, currentCourses, res) {
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
  * @param {String[]} currentCourses - An array of courses that the user is current taking
  * @param {Object} res - response object used to send back to the client
- * @returns {Boolean} - A boolean representing if a conflict does indeed occur, true if so, if not false
+ * @returns {Boolean} - A boolean representing if a conflict does indeed occur,
+ *                      true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
   let conflictInSchedule = false;
@@ -775,12 +777,11 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
       let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i], res);
 
       /**
-      * Check each day the to be enrolled course takes places against logged in user
-      * current course days
-      */
+       * Check each day the to be enrolled course takes places against logged in user
+       * current course days
+       */
       for (let j = 0; j < santizedInfo[2].length; j += 1) {
 
-        // compares for every day in the selectedCourse we want to enroll make sure if one of the days is equal
         if ((santizedInfo[3]).includes((santizedInfo[2])[j])) {
 
           // Checking if two times on the same day overlap
@@ -808,8 +809,8 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
  *                                      lies on.
  * @param {String} currentCourse - A course that the logged in user is taking
  * @param {Object} res - response object used to send back to the client
- * @returns {Object} - An array of santatized day and time information for both class the user is taking and
- *          request classes
+ * @returns {Object} - An array of santatized day and time information for
+ *                     both class the user is taking and request classes
  */
 async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse, res) {
   try {
@@ -863,9 +864,9 @@ function timesOverlap(range1, range2) {
   let allTimes = [
     [range1StartTime, range1EndTime],
     [range2StartTime, range2EndTime]
-  ].sort((range1, range2) => {
-    let [aStartHour, aStartMinute] = range1[0].split(":").map(Number);
-    let [bStartHour, bStartMinute] = range2[0].split(":").map(Number);
+  ].sort((range1a, range2b) => {
+    let [aStartHour, aStartMinute] = range1a[0].split(":").map(Number);
+    let [bStartHour, bStartMinute] = range2b[0].split(":").map(Number);
 
     if (aStartHour === bStartHour) {
 
@@ -910,8 +911,8 @@ async function closeDbConnection(db) {
 
 /**
  * Handles errors in a try-catch block and sends an error response to the client.
- * @param {Error} error - The error object.
  * @param {Object} res - response object used to send back to the client
+ * @param {Error} error - The error object.
  */
 function handleError(res, error) {
   res.status(SERVER_ERROR_CODE).text("Internal server error: " + error);
