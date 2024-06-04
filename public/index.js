@@ -12,6 +12,10 @@
   let filterArrSubject = [];
   let filterArrCredit = [];
   let filterArrCourseLevel = [];
+  const USER_ERROR_CODE = 400;
+  const SUCCESS_CODE = 200;
+  const SECONDS = 2000;
+  const BEGINNING_ALPHABET = 65;
   let mainArray = {
     "Course level": filterArrCourseLevel,
     "Subjects": filterArrSubject,
@@ -28,7 +32,7 @@
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
     id("search-button").addEventListener("click", fetchSearchBar);
-    id("visual-schedule").addEventListener("click", openTransaction)
+    id("visual-schedule").addEventListener("click", openTransaction);
     id("reset-button").addEventListener("click", () => {
       id("classes").innerHTML = '';
       load();
@@ -52,7 +56,8 @@
    */
   function openTransaction() {
     if (localStorage.length === 0) {
-      id("error-message-enroll").textContent = "You must be logged in to view your enrolled courses.";
+      id("error-message-enroll").textContent = "You must be logged in to view your " +
+                                               "enrolled courses.";
       id("error-message-enroll").classList.add("error");
     } else {
       id("error-message-enroll").textContent = "";
@@ -71,7 +76,7 @@
     try {
       let username = localStorage.key(0);
       let result = await fetch("/previousTransactions?username=" + username);
-      if (result.status === 400) {
+      if (result.status === USER_ERROR_CODE) {
         id("error-message-enroll").textContent = "You have not enrolled in any courses.";
         id("error-message-enroll").classList.add("error");
       } else {
@@ -99,6 +104,7 @@
     let DOMarr = [];
     for (let i = 0; i < userTransactionCodes.length; i++) {
       let currTCode = userTransactionCodes[i];
+
       // array of keys
       let obj = {};
       obj[currTCode] = [];
@@ -109,7 +115,7 @@
       }
       DOMarr.unshift(obj);
     }
-    for (let i = 0; i < DOMarr.length ; i++) {
+    for (let i = 0; i < DOMarr.length; i++) {
       let currentObj = DOMarr[i];
       let currentTCode = Object.keys(currentObj)[0];
       let currDOMs = currentObj[currentTCode];
@@ -119,7 +125,7 @@
       tCode.classList.add("enrolled-content");
       tCode.classList.add("tCode-title");
       enroll.appendChild(tCode);
-      for (let j = 0; j < currDOMs.length ;j++) {
+      for (let j = 0; j < currDOMs.length; j++) {
         let currDOM = currDOMs[j];
         enroll.appendChild(currDOM);
       }
@@ -129,7 +135,7 @@
   /**
    * This method constructs the enrolled courses for the user and returns it as a DOM object.
    * @param {Object} data - Object that contains the data for the enrolled courses
-   * @returns {DOM Object} - A fully built DOM object that represents the enrolled courses
+   * @returns {Object} - A fully built DOM object that represents the enrolled courses
    */
   function constructEnrolledCourses(data) {
     let key = Object.keys(data)[0];
@@ -146,8 +152,8 @@
     courseSubject.textContent = "Subject: " + data[key].subject;
 
     let courseDate = document.createElement("p");
-    courseDate.textContent = "Days: " + data[key].date.split(/\s{2}/)[0]
-                             + " | Time: " + data[key].date.split(/\s{2}/)[1];
+    courseDate.textContent = "Days: " + data[key].date.split(/\s{2}/)[0] +
+                             " | Time: " + data[key].date.split(/\s{2}/)[1];
 
     let courseSeats = document.createElement("p");
     courseSeats.textContent = "Available Seats: " + data[key].availableSeats;
@@ -172,7 +178,7 @@
   async function fetchSearchBar() {
     try {
       let searchTerm = id("course-input").value.trim();
-      let result = await fetch("/search" + "?className=" + searchTerm);
+      let result = await fetch("/search?className=" + searchTerm);
       await statusCheck(result);
       let data = await result.json();
       let classList = id("classes");
@@ -224,7 +230,7 @@
    * @param {Boolean} checkbox - True/false on if the checkbox was clicked
    */
   async function buildSearch(category, checkbox) {
-    if(checkbox !== null) {
+    if (checkbox !== null) {
       mainArray[category].unshift(checkbox.nextElementSibling.textContent);
     }
     if (!isMainArrEmpty()) {
@@ -241,9 +247,10 @@
         let currArr = mainArray[key];
         if (currArr.length !== 0) {
           // here we know there is a boxed checked in this section filter
-          buildQuery += (keyPairing[key] + "=" + JSON.stringify(currArr) + "\&");
+          buildQuery += (keyPairing[key] + "=" + JSON.stringify(currArr) + "&");
         }
       }
+
       // remove any potential last char which could be a &
       if (buildQuery.endsWith("&")) {
         buildQuery = buildQuery.slice(0, -1);
@@ -274,10 +281,13 @@
         result = await fetch("/search?" + buildQuery);
       }
       let classList = id("classes");
-      if (result.status === 200) {
+      if (result.status === SUCCESS_CODE) {
         let data = await result.json();
-        // check if the response back is a empty array if so we need to display
-        // there are no class for the specified filters.
+
+        /**
+         * check if the response back is a empty array if so we need to display
+         * there are no class for the specified filters.
+         */
         classList.innerHTML = '';
         for (let i = 0; i < data.classes.length; i++) {
           let currObj = data.classes[i];
@@ -285,7 +295,7 @@
           currCourseDOM.addEventListener('click', openCourse);
           classList.appendChild(currCourseDOM);
         }
-      } else if (result.status === 400) {
+      } else if (result.status === USER_ERROR_CODE) {
         classList.innerHTML = '';
         let noClass = document.createElement("h2");
         noClass.textContent = "No classes found for the specified filters/search.";
@@ -305,7 +315,7 @@
   function isMainArrEmpty() {
     let keys = Object.keys(mainArray);
     for (let i = 0; i < keys.length; i++) {
-      let key =keys[i]
+      let key = keys[i];
       let currArr = mainArray[key];
       if (currArr.length !== 0) {
         return false; // If any inner array is not empty, return false
@@ -321,8 +331,8 @@
    */
   function checkLogin() {
     let key = localStorage.key(0);
-    if(key) {
-      if(JSON.parse(localStorage.getItem(key))[1]) {
+    if (key) {
+      if (JSON.parse(localStorage.getItem(key))[1]) {
         id("display-login").classList.add("hidden");
         id("login").classList.add("hidden");
         id("signout").classList.remove("hidden");
@@ -388,7 +398,7 @@
    * It then constructs the overall course overview and course sections.
    */
   async function fetchCoursePage() {
-    try{
+    try {
       let courseName = qsa('.title')[1].textContent.split(' - ')[0].trim();
       let response = await fetch("/itemDetails/" + courseName);
       await statusCheck(response);
@@ -399,7 +409,7 @@
       h3OverviewTitle.textContent = "Course Overview";
       h3OverviewTitle.classList.add("title-overview");
 
-      //title for course sections
+      // title for course sections
       let h3SectionTitle = document.createElement("h3");
       h3SectionTitle.textContent = courseName + " Course Sections";
       h3SectionTitle.classList.add("title-overview-sec");
@@ -423,7 +433,7 @@
    * @returns {Object} - a fully built DOM representing the entire DOM for each course section.
    */
   function constructCourseSection(data) {
-    //main body in which each class section will be in
+    // main body in which each class section will be in
     let overviewContentSec = document.createElement("section");
     overviewContentSec.classList.add("overview-content-sec");
     for (let i = 0; i < data.length; i++) {
@@ -550,7 +560,7 @@
    * hide the enrollment button.
    */
   function openEnrollment() {
-    if(this.checked) {
+    if (this.checked) {
       showEnrollButton();
     } else {
       let allEnrollBox = qsa('.enrollBox');
@@ -598,12 +608,16 @@
         params.append("className", className);
         params.append("id", userId);
         let response = await fetch("/enrollCourse", {method: "POST", body: params});
-        if (response.status === 200) {
-          // success display message that it was successful and after 2 seconds close the course page
+        if (response.status === SUCCESS_CODE) {
+
+          /**
+           * Success display message that it was successful and after 2 seconds
+           * close the course page
+           */
           let successMsg = document.createElement("div");
           successMsg.classList.add("success");
-          successMsg.textContent = "Success enrollment! Your enrollment receipt code is: \'" +
-                                    await response.text() + "\'";
+          successMsg.textContent = "Success enrollment! Your enrollment receipt code is: '" +
+                                    await response.text() + "'";
 
           id('error-message-course').insertAdjacentElement('afterend', successMsg);
 
@@ -630,12 +644,12 @@
     }
 
     // after two seconds close the page for the user:
-    setTimeout(() =>{
+    setTimeout(() => {
       if (id("pop-up-courses").classList.contains("active") &&
           id("overlay2").classList.contains("active")) {
         toggleCoursePage();
       }
-    }, 2000);
+    }, SECONDS);
   }
 
   /**
@@ -649,24 +663,24 @@
       id("error-message-course").textContent = "You must be logged in to enroll.";
       id("error-message-course").classList.add("error");
       return false;
-    } else {
-      // check if user did not select more than 1.
-      let checkedBox = qsa('.enrollBox');
-      let countChecked = 0;
-      for (let i = 0; i < checkedBox.length; i++) {
-        if (checkedBox[i].checked) {
-          countChecked++;
-        }
-      }
-      if (countChecked > 1) {
-        id("error-message-course").textContent = "You cannot select more " +
-                                                "than one of the same course.";
-        id("error-message-course").classList.add("error");
-        return false;
-      }
-      // everything is good time to enroll!
-      return true;
     }
+    // check if user did not select more than 1.
+    let checkedBox = qsa('.enrollBox');
+    let countChecked = 0;
+    for (let i = 0; i < checkedBox.length; i++) {
+      if (checkedBox[i].checked) {
+        countChecked++;
+      }
+    }
+    if (countChecked > 1) {
+      id("error-message-course").textContent = "You cannot select more " +
+                                              "than one of the same course.";
+      id("error-message-course").classList.add("error");
+      return false;
+    }
+
+    // everything is good time to enroll!
+    return true;
   }
 
   /**
@@ -675,7 +689,7 @@
    * @returns {String} - The alphabet that corresponds to the index.
    */
   function indexToAlphabet(index) {
-    return String.fromCharCode(65 + index);
+    return String.fromCharCode(BEGINNING_ALPHABET + index);
   }
 
   /**
@@ -803,7 +817,7 @@
    * it displays the webpage as if its not logged in.
    */
   async function signout() {
-    try{
+    try {
       let username = localStorage.key(0);
       let password = JSON.parse(localStorage.getItem(username))[0];
       let params = new FormData();
@@ -814,7 +828,7 @@
       let response = await fetch("/signout", {method: "POST", body: params});
 
       await statusCheck(response);
-      if (response.status === 200) {
+      if (response.status === SUCCESS_CODE) {
         localStorage.removeItem(username);
         id("error-message-enroll").textContent = "";
         id("login").classList.remove("hidden");
@@ -841,12 +855,12 @@
         params.append("username", username);
         params.append("password", password);
         let saveUser = false;
-        if(savePass.checked) {
+        if (savePass.checked) {
           params.append("savePassWord", true);
           saveUser = true;
         }
         let result = await fetch("/login", {method: "POST", body: params});
-        if(result.status === 400) {
+        if (result.status === USER_ERROR_CODE) {
           // bad request from user.
           id("error-message").textContent = "Invalid username or password";
           id("error-message").classList.add("error");
@@ -867,11 +881,12 @@
   /**
    * Helper function that helps with the login function.
    * @param {Object} result - result from the fetch request
-   * @param {Object} username - username of the user
-   * @param {Object} password - password of the user
+   * @param {String} username - username of the user
+   * @param {String} password - password of the user
+   * @param {Boolean} saveUser - Boolean representing whether or not we shoudl save user.
    */
-  function loginOfficialHelper(result, username, password, saveUser) {
-    if (result.status === 200) {
+  async function loginOfficialHelper(result, username, password, saveUser) {
+    if (result.status === SUCCESS_CODE) {
       toggleActiveLogin();
       id("login").classList.add("hidden");
       id("display-login").classList.add("hidden");
@@ -882,7 +897,7 @@
       let localStorageData = [password, saveUser];
       window.localStorage.setItem(username, JSON.stringify(localStorageData));
     } else {
-      id("error-message").textContent = data.message;
+      id("error-message").textContent = await result.text().message;
     }
   }
 
@@ -899,7 +914,6 @@
       btn.classList.remove("hidden");
     }
   }
-
 
   /**
    * Function that handles the error when the user tries to log in.
