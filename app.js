@@ -195,130 +195,98 @@ app.post("/enrollCourse", async function(req, res) {
  * @param {Object} res - response object used to send back to the client
  */
 async function checkLoginStatus(isUserLogin, className, classId, userName, db, res) {
-  if (!isUserLoggedIn(isUserLogin, res)) return;
+  if (isUserLogin === "true") {
+    // Note that classname is guranteed to be filled as client picks a class to make a request
+    let query2 = "SELECT * FROM classes WHERE shortName = ? AND id = ?;";
+    let classInfo = await db.get(query2, [className, classId]);
+    if (classInfo !== undefined) {
 
-  const classInfo = await getClassInfo(db, className, classId, res);
-  if (!classInfo) return;
+      // The class does exist so now check its capacity, the date is grabbed to be used later
+      let totalSeatsVal = classInfo.availableSeats;
+      let toBeEnrolledCourseDate = classInfo.date;
 
-  const totalSeatsVal = classInfo.availableSeats;
-  if (!checkAvailability(totalSeatsVal, res)) return;
-
-  const currentCourses = await getCurrentCourses(db, userName, res);
-  if (!currentCourses) return;
-
-  await checkConflictHelper(db, classInfo.date, currentCourses, className, userName, classId, res);
-}
-
-/**
- * Function that checks if the user is logged in and sends appropriate response if not
- * @param {Boolean} isUserLogin - Boolean representing if the user is logged in or not
- * @param {Object} res - response object used to send back to the client
- * @returns {Boolean} - True if the user is logged in, false otherwise
- */
-function isUserLoggedIn(isUserLogin, res) {
-  if (!isUserLogin) {
+      // Checking if space availability is valid
+      if (totalSeatsVal > 0) {
+        let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
+        let currentCourses = await db.all(query3, userName);
+        await checkConflictHelper(
+          db,
+          toBeEnrolledCourseDate,
+          currentCourses,
+          className,
+          userName,
+          classId,
+          res
+        );
+      } else {
+        res.type("text").status(USER_ERROR_CODE)
+          .send("This course is add capacity. Cannot enroll");
+      }
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+        .send("This class does not exist");
+    }
+  } else {
     res.type("text").status(USER_ERROR_CODE)
       .send("You are not logged in. Please sign in");
-    return false;
   }
-  return true;
-}
-
-/**
- * Function that retrieves class information from the database and sends appropriate response if not found
- * @param {Object} db - SQLite database connection
- * @param {String} className - name of the short name class
- * @param {Integer} classId - id of the short name class
- * @param {Object} res - response object used to send back to the client
- * @returns {Object} - Class information if found, null otherwise
- */
-async function getClassInfo(db, className, classId, res) {
-  const query2 = "SELECT * FROM classes WHERE shortName = ? AND id = ?;";
-  const classInfo = await db.get(query2, [className, classId]);
-  if (!classInfo) {
-    res.type("text").status(USER_ERROR_CODE)
-      .send("This class does not exist");
-    return null;
-  }
-  return classInfo;
-}
-
-/**
- * Function that checks if the course has available seats and sends appropriate response if not
- * @param {Integer} totalSeatsVal - Total available seats for the course
- * @param {Object} res - response object used to send back to the client
- * @returns {Boolean} - True if there are available seats, false otherwise
- */
-function checkAvailability(totalSeatsVal, res) {
-  if (totalSeatsVal <= 0) {
-    res.type("text").status(USER_ERROR_CODE)
-      .send("This course is at capacity. Cannot enroll");
-    return false;
-  }
-  return true;
-}
-
-/**
- * Function that retrieves current courses of the user from the database and sends appropriate response if not found
- * @param {Object} db - SQLite database connection
- * @param {String} userName - name of the user
- * @param {Object} res - response object used to send back to the client
- * @returns {Object[]} - Array of current courses if found, null otherwise
- */
-async function getCurrentCourses(db, userName, res) {
-  const query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
-  const currentCourses = await db.all(query3, userName);
-  if (!currentCourses) {
-    res.type("text").status(USER_ERROR_CODE)
-      .send("Error retrieving user courses");
-    return null;
-  }
-  return currentCourses;
 }
 
 /**
  * Function that is used to help check the conflict of two date times user passed.
  * @param {Object} db - The SQLite database connection.
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
- * @param {Object[]} currentCourses - An array of courses that the user is currently taking
+ * @param {Object} currentCourses - An array of courses that the user is currently taking
  * @param {String} className - The name of the class short name the user wants to enroll in
  * @param {String} userName - The username of the logged in user
  * @param {Integer} classId - The id of the class the user wants to enroll in
  * @param {Object} res - response object used to send back to the client
  */
-async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res) {
-  const conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
-  if (conflictInScheduleResult) {
-    res.type("text").status(USER_ERROR_CODE)
-      .send("A conflict in your schedule has occurred");
-    return;
-  }
+async function checkConflictHelper(
+  db,
+  toBeEnrolledCourseDate,
+  currentCourses,
+  className,
+  userName,
+  classId,
+  res
+) {
+  // Check all the dates of each class
+  let conflictInScheduleResult = await checkConflict(
+    db,
+    toBeEnrolledCourseDate,
+    currentCourses
+  );
 
-  const addingAnNewClass = isNewClass(currentCourses, className);
-  if (!addingAnNewClass) {
-    res.type("text").status(USER_ERROR_CODE)
-      .send("Cannot enroll in a class you have already enrolled.");
-    return;
-  }
+  /**
+   * No over lap takes place therefore the following code function is to add a
+   * course to users schedule
+   */
+  if (!conflictInScheduleResult) {
+    let addingAnNewClass = true;
+    for (let i = 0; i < currentCourses.length; i += 1) {
 
-  const newCode = await helperFunction(db, className, userName, currentCourses, classId);
-  res.type("text").status(SUCCESS_CODE)
-    .send("Successfully added course, this is the confirmation code: " + newCode);
-}
-
-/**
- * Function that checks if the class to be added is new
- * @param {Object[]} currentCourses - An array of courses that the user is currently taking
- * @param {String} className - The name of the class short name the user wants to enroll in
- * @returns {Boolean} - True if the class is new, false otherwise
- */
-function isNewClass(currentCourses, className) {
-  for (let i = 0; i < currentCourses.length; i += 1) {
-    if (currentCourses[i].takingCourse === className) {
-      return false;
+      // Check for if a class that this user is taking matches the requested class to add
+      if (currentCourses[i].takingCourse === className) {
+        addingAnNewClass = false;
+        i = currentCourses.length;
+      }
     }
+
+    // Passed all conditions therefore updating the database is being represented below
+    if (addingAnNewClass) {
+      let newCode = await helperFunction(db, className, userName, currentCourses, classId);
+
+      res.type("text").status(SUCCESS_CODE)
+        .send("Successfully added course, this is the confirmation code: " + newCode);
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+        .send("Cannot enroll in a class you have already enrolled.");
+    }
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("A conflict in your schedule has occured");
   }
-  return true;
 }
 
 /**
