@@ -374,17 +374,17 @@ async function constructSearchQueryHelper(className, classQueryUsed, query, vali
      */
     let result = classQueryUsed ? await db.all(query, `%${className}%`) : await db.all(query);
 
-    // Empty query means that the user has mistakenly inputed data
+    // Empty array (query) represents no matching classes
     if (result.length === 0) {
-      throw new Error("Invalid Query");
+      throw new Error("No matching results");
     }
     let matchingSearchClasses = {"classes": result};
     await closeDbConnection(db);
     res.json(matchingSearchClasses);
   } catch (error) {
-    if (error.message === "Invalid Query") {
+    if (error.message === "No matching results") {
       res.type("text").status(USER_ERROR_CODE)
-        .send("Invalid class name specified");
+        .send("This search combination yielded not results");
     } else {
       res.type("text").status(SERVER_ERROR_CODE)
         .send("An error occurred on the server. Try again later.");
@@ -394,7 +394,7 @@ async function constructSearchQueryHelper(className, classQueryUsed, query, vali
 
 /** Sends back information of entire history of saved user schedules */
 app.get("/previousTransactions", async function(req, res) {
-  // Check if username and passaword are in database
+  // Check if username and password are in the database
   let username = req.query.username;
 
   // Checking the login status
