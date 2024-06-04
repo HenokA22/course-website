@@ -3,7 +3,8 @@
   Date: May 4th, 2024
   Section: AE, Peter Oh & Kasten Welsh
 
-  This is the styles.css page for main page
+  This is the styles.css page for main page of our website. It provide a lavish purple and white
+  body which is representive of CSS
 */
 
 body {
@@ -264,7 +265,8 @@ a {
   margin-bottom: 60px;
 }
 
-/* Used in constructCourseSection to style the overall Parent DOM tag that each course section detail will be in */
+/* Used in constructCourseSection to style the overall Parent DOM tag that each course section
+  detail will be in */
 .overview-content-sec {
   border: none;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
