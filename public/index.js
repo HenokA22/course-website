@@ -860,7 +860,8 @@
           params.append("savePassWord", true);
           saveUser = true;
         }
-        helperLoginOfficial(result, username, password, saveUser);
+        let result = await fetch("/login", {method: "POST", body: params});
+        await helperLoginOfficial(result, username, password, saveUser);
       } catch (err) {
         handleErr(err);
       }
@@ -889,6 +890,7 @@
       loginOfficialHelper(result, username, password, saveUser);
     }
   }
+
   /**
    * Helper function that helps with the login function.
    * @param {Object} result - result from the fetch request
