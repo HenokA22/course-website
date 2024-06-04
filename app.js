@@ -496,7 +496,7 @@ async function createQuery(className, classQueryUsed, query, validFilters, res) 
  * @param {String} query - current query used in createQuery
  * @param {String} className - name of the class
  * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
- * @return {String} - returning back the string query after modification
+ * @returns {String} - returning back the string query after modification
  */
 function helperCreateQuery(regex, query, className, validFilters) {
   // Test to see if search term is a short name or full name of a class
@@ -543,12 +543,11 @@ async function determinePartialSearch(className, res) {
   return returnBool;
 }
 
-
 /**
  * Applies filters to a translated search query from the UI
  * @param {String} query - A select statement without filters
  * @param {Array} validFilters - An array of all the filters to apply on the query
- * @returns - Completed search query with filters applied
+ * @returns {String} - Completed search query with filters applied
  */
 function applyFiltersToQuery(query, validFilters) {
   // This double for loop generates the search/filter query
@@ -561,10 +560,10 @@ function applyFiltersToQuery(query, validFilters) {
      * quality -- in a time crunch)
      */
     if ((i === 0) && (query.charAt(query.length - 1) === '?')) {
-      query += ") AND ("
+      query += ") AND (";
     }
 
-    query = ApplyConditionFilterHelper(nameAndValuesForAFilter, name, query);
+    query = applyConditionFilterHelper(nameAndValuesForAFilter, name, query);
 
     // Complete of the filters applied portion of the query with a closing parenthesis
     query += ")";
@@ -592,15 +591,15 @@ function applyFiltersToQuery(query, validFilters) {
  * @param {String} query - overall query we are constructing based on filters
  * @returns {String} - query representing what we are adding
  */
-function ApplyConditionFilterHelper(nameAndValuesForAFilter, name, query) {
+function applyConditionFilterHelper(nameAndValuesForAFilter, name, query) {
   // traversing the values of a filter
   for (let j = 1; j < nameAndValuesForAFilter.length; j += 1) {
 
     // The query structure differs based on if the date filter is applied.
     if (name === "date") {
-      query += name + " LIKE \"%" +  nameAndValuesForAFilter[j] + "%\"";
+      query += name + " LIKE \"%" + nameAndValuesForAFilter[j] + "%\"";
     } else if (name === "subject") {
-      query += name + " = " + "\"" + nameAndValuesForAFilter[j] + "\"";
+      query += name + " = \"" + nameAndValuesForAFilter[j] + "\"";
     } else {
       query += name + " = " + nameAndValuesForAFilter[j];
     }
@@ -646,13 +645,13 @@ async function helperFunction(db, className, userName, currentCourses, id, res) 
     currentCourses = await db.all(newClassRes, userName);
 
     /**
-    * Grabing information from each course the student is taking putting that into an object
-    * Then applying then assembling that into a larger array that represents what the
-    * student is currently taking.
-    */
+      * Grabing information from each course the student is taking putting that into an object
+      * Then applying then assembling that into a larger array that represents what the
+      * student is currently taking.
+      */
     let studentClasses = await getStudentClassesInfo(db, currentCourses, res);
 
-    await helperConstructCourseHistory(newCode, studentClasses, userName);
+    helperConstructCourseHistory(newCode, studentClasses, userName);
 
     await closeDbConnection(db);
     return newCode;
@@ -668,11 +667,11 @@ async function helperFunction(db, className, userName, currentCourses, id, res) 
  * @param {Object} studentClasses - array representing the curring classes user is enrolled in
  * @param {*} userName - name of the user who is logged in.
  */
-async function helperConstructCourseHistory(newCode, studentClasses, userName) {
+function helperConstructCourseHistory(newCode, studentClasses, userName) {
   /**
-  * adding new "transaction(adding a class) to be mapped to a user up to date
-  * course schedule.
-  */
+    * adding new "transaction(adding a class) to be mapped to a user up to date
+    * course schedule.
+    */
   let newTransactionKey = newCode;
 
   // Adding user new current schedule to course history
@@ -693,10 +692,12 @@ async function helperConstructCourseHistory(newCode, studentClasses, userName) {
     courseHistory[userName][newTransactionKey] = studentClasses;
   }
 }
-
+const RANGE = 6;
+const MAX_ASCII = 126;
+const MIN_ASCII = 33;
 /**
  * Creates a random 6 digits code to distigush a new class enrollement for a student
- * @returns A string that is the code itself
+ * @returns {String} - A string that is the code itself
  */
 function createCode() {
   // Creating the confirmation code below
@@ -706,9 +707,9 @@ function createCode() {
   // While loop checks if the code is invalid or not
   while (invalidCode) {
     newCode = "";
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < RANGE; i += 1) {
       // Picking a random ascii value from dec 33 to 126
-      let randomNumInRange = Math.floor(Math.random() * (126 - 33 + 1) + 33);
+      let randomNumInRange = Math.floor(Math.random() * (MAX_ASCII - MIN_ASCII + 1) + MIN_ASCII);
       let randomAsciiVal = String.fromCharCode(randomNumInRange);
       newCode += randomAsciiVal;
     }
@@ -739,13 +740,17 @@ async function getStudentClassesInfo(db, currentCourses, res) {
     for (let i = 0; i < currentCourses.length; i += 1) {
 
       // Query to get information about the current course
-      let classInfoQuery = "SELECT date, availableSeats, subject, description, credits FROM classes WHERE shortName = ? AND id = ?;";
+      let classInfoQuery = "SELECT date, availableSeats, subject, " +
+                          "description, credits FROM classes WHERE shortName = ? AND id = ?;";
 
       // Execute the query to get class information
-      let classInfoResult = await db.get(classInfoQuery, [currentCourses[i].takingCourse, currentCourses[i].classId]);
+      let classInfoResult = await db.get(
+        classInfoQuery,
+        [currentCourses[i].takingCourse, currentCourses[i].classId]
+      );
 
       // Create a snapshot object for the current course and add it to studentClasses array
-      let newCourseHistorySnapShot = { [currentCourses[i].takingCourse]: classInfoResult };
+      let newCourseHistorySnapShot = {[currentCourses[i].takingCourse]: classInfoResult};
       studentClasses.push(newCourseHistorySnapShot);
     }
 
@@ -761,7 +766,7 @@ async function getStudentClassesInfo(db, currentCourses, res) {
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
  * @param {String[]} currentCourses - An array of courses that the user is current taking
  * @param {Object} res - response object used to send back to the client
- * @return - A boolean representing if a conflict does indeed occur, true if so, if not false
+ * @returns {Boolean} - A boolean representing if a conflict does indeed occur, true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
   let conflictInSchedule = false;
@@ -769,27 +774,27 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
     for (let i = 0; i < currentCourses.length; i += 1) {
       let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i], res);
 
-       /**
-        * Check each day the to be enrolled course takes places against logged in user
-        * current course days
-        */
-       for (let j = 0; j < santizedInfo[2].length; j += 1) {
+      /**
+      * Check each day the to be enrolled course takes places against logged in user
+      * current course days
+      */
+      for (let j = 0; j < santizedInfo[2].length; j += 1) {
 
-         // compares for every day in the selectedCourse we want to enroll make sure if one of the days is equal
-         if ((santizedInfo[3]).includes((santizedInfo[2])[j])) {
+        // compares for every day in the selectedCourse we want to enroll make sure if one of the days is equal
+        if ((santizedInfo[3]).includes((santizedInfo[2])[j])) {
 
-           // Checking if two times on the same day overlap
-           conflictInSchedule = timesOverlap(santizedInfo[0], santizedInfo[1]);
-           if (conflictInSchedule) {
+          // Checking if two times on the same day overlap
+          conflictInSchedule = timesOverlap(santizedInfo[0], santizedInfo[1]);
+          if (conflictInSchedule) {
 
-             // Exit both loops since conflict has been found
-             i = currentCourses.length;
-             j = santizedInfo[2].length;
-           }
-         }
-       }
-     }
-     return conflictInSchedule;
+            // Exit both loops since conflict has been found
+            i = currentCourses.length;
+            j = santizedInfo[2].length;
+          }
+        }
+      }
+    }
+    return conflictInSchedule;
   } catch (error) {
     handleError(res, error);
   }
@@ -803,14 +808,14 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
  *                                      lies on.
  * @param {String} currentCourse - A course that the logged in user is taking
  * @param {Object} res - response object used to send back to the client
- * @returns An array of santatized day and time information for both class the user is taking and
+ * @returns {Object} - An array of santatized day and time information for both class the user is taking and
  *          request classes
  */
 async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse, res) {
   try {
 
     // Accessing the nested date value from result of .get()
-    let dateQuery = "SELECT date FROM classes WHERE shortName = ? AND id = ?;"
+    let dateQuery = "SELECT date FROM classes WHERE shortName = ? AND id = ?;";
     let dateResultOB = await db.get(dateQuery, [currentCourse.takingCourse, currentCourse.classId]);
     let date = dateResultOB.date;
 
@@ -858,9 +863,9 @@ function timesOverlap(range1, range2) {
   let allTimes = [
     [range1StartTime, range1EndTime],
     [range2StartTime, range2EndTime]
-  ].sort((a, b) => {
-    let [aStartHour, aStartMinute] = a[0].split(":").map(Number);
-    let [bStartHour, bStartMinute] = b[0].split(":").map(Number);
+  ].sort((range1, range2) => {
+    let [aStartHour, aStartMinute] = range1[0].split(":").map(Number);
+    let [bStartHour, bStartMinute] = range2[0].split(":").map(Number);
 
     if (aStartHour === bStartHour) {
 
@@ -873,7 +878,7 @@ function timesOverlap(range1, range2) {
   /**
    * check if the end time of the irst range is greater than the
    * start time of the second range. If so we know there is a overlap.
-  */
+   */
   let isOverlap = allTimes[1][0] < allTimes[0][1];
   return isOverlap;
 }
@@ -906,6 +911,7 @@ async function closeDbConnection(db) {
 /**
  * Handles errors in a try-catch block and sends an error response to the client.
  * @param {Error} error - The error object.
+ * @param {Object} res - response object used to send back to the client
  */
 function handleError(res, error) {
   res.status(SERVER_ERROR_CODE).text("Internal server error: " + error);
