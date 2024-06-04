@@ -307,7 +307,6 @@ app.get("/search", async function(req, res) {
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
-    console.log(query);
     let result = classQueryUsed ? await db.all(query, `%${className}%`) : await db.all(query);
 
     // Empty query means that the user has mistakenly inputed data
@@ -380,16 +379,13 @@ app.get("/previousTransactions", async function(req, res) {
 async function createQuery(className, classQueryUsed, query, validFilters) {
   let searchBarNotEmpty = classQueryUsed;
   let isPartial = await determinePartialSearch(className);
-  console.log(isPartial);
 
   if(isPartial && className !== undefined) {
     searchBarNotEmpty = true;
-    console.log("in partial flow");
     // Always use shortName
     query += "SELECT * FROM classes WHERE (shortName LIKE ?";
     query = applyFiltersToQuery(query, validFilters);
   } else if(className) {
-    console.log("not in partial flow");
     searchBarNotEmpty = true;
 
     // Regular expression used to match any digit
@@ -448,8 +444,6 @@ async function determinePartialSearch(className) {
  * @returns - Completed search query with filters applied
  */
 function applyFiltersToQuery(query, validFilters) {
-  console.log(validFilters.length);
-  console.log("here");
   // This double for loop generates the search/filter query
   for (let i = 0; i < validFilters.length; i += 1) {
     let nameAndValuesForAFilter = validFilters[i];
@@ -468,8 +462,6 @@ function applyFiltersToQuery(query, validFilters) {
 
       // The query structure differs based on if the date filter is applied.
       if (name === "date") {
-        //console.log(nameAndValuesForAFilter[j]);
-        console.log(nameAndValuesForAFilter);
         query += name + " LIKE \"%" +  nameAndValuesForAFilter[j] + "%\"";
       } else if (name === "subject") {
         query += name + " = " + "\"" + nameAndValuesForAFilter[j] + "\"";

@@ -1,3 +1,11 @@
+/**
+ * This file contains the JavaScript code for the index page of the application.
+ * It includes functions for initializing the page, handling user interactions,
+ * fetching data from the server, and displaying the search results and enrolled courses.
+ *
+ * Created by Jimmy Le and Henok Assalif on June 3rd, 2024.
+ */
+
 "use strict";
 (function() {
   let filterArrDate = [];
@@ -10,25 +18,38 @@
     "Credits": filterArrCredit,
     "Days": filterArrDate
   };
+
   window.addEventListener("load", init);
 
   /** Function that runs when the page is loaded and sets up other functions. */
-  function init() {
+  async function init() {
     checkLogin();
     id("login").addEventListener("click", login);
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
     id("search-button").addEventListener("click", fetchSearchBar);
     id("visual-schedule").addEventListener("click", openTransaction)
+    id("reset-button").addEventListener("click", () => {
+      id("classes").innerHTML = '';
+      load();
+      id("reset-button").classList.add("hidden");
+    });
     load();
-    checkForFilter();
+    await checkForFilter();
   }
 
+  /**
+   * Function that toggles the pop up page for the users enrolled courses.
+   */
   function toggleEnrolledTransaction() {
     id("pop-up-enroll").classList.toggle("active");
     id("overlay3").classList.toggle("active");
   }
 
+  /**
+   * Function that opens the users enrolled course page if and only if the user is logged in.
+   * It also handles the event in which you exit out of the page.
+   */
   function openTransaction() {
     if (localStorage.length === 0) {
       id("error-message-enroll").textContent = "You must be logged in to view your enrolled courses.";
@@ -41,6 +62,11 @@
     }
   }
 
+  /**
+   * This method fetches the enrolled courses for the user and displays them on the page.
+   * If the user has not enrolled in any courses, it will display an error message.
+   *
+   */
   async function fetchEnrolledCourses() {
     try {
       let username = localStorage.key(0);
@@ -51,47 +77,60 @@
       } else {
         toggleEnrolledTransaction();
         let data = await result.json();
-        console.log(data);
         let enroll = qs(".pop-up-body-enroll");
         let userTransactionCodes = Object.keys(data);
-        console.log("All of your key: " + userTransactionCodes);
-        let DOMarr = [];
-        for (let i = 0; i < userTransactionCodes.length; i++) {
-          let currTCode = userTransactionCodes[i];
-          console.log("Your key: " + currTCode);
-          // array of keys
-          let obj = {};
-          obj[currTCode] = [];
-          for (let j = 0; j < data[currTCode].length; j++) {
-            let currObj = data[currTCode][j];
-            let currCourseDOM = constructEnrolledCourses(currObj);
-            obj[currTCode].unshift(currCourseDOM);
-          }
-          DOMarr.unshift(obj);
-        }
-        for (let i = 0; i < DOMarr.length ; i++) {
-          let currentObj = DOMarr[i];
-          let currentTCode = Object.keys(currentObj)[0];
-          let currDOMs = currentObj[currentTCode];
-
-          let tCode = document.createElement("p");
-          tCode.textContent = currentTCode;
-          tCode.classList.add("enrolled-content");
-          tCode.classList.add("tCode-title");
-          enroll.appendChild(tCode);
-          for (let j = 0; j < currDOMs.length ;j++) {
-            let currDOM = currDOMs[j];
-            enroll.appendChild(currDOM);
-          }
-        }
+        parseOutAndAppendTransaction(data, enroll, userTransactionCodes);
       }
     } catch (error) {
-      console.log(error);
+      handleErr(error);
     }
   }
 
+  /**
+   * This is a helper method for fetchEnrolledCourses() which parses the sent back data and stores
+   * it in a array where it will display the transaction history of a user from most recent
+   * to oldest.
+   * @param {Object} data - Object that contains the data for the user's enrolled courses
+   * @param {Object} enroll - DOM object that represents the pop up page for the user's
+   *                          enrolled courses
+   * @param {Object} userTransactionCodes - Array of keys for the data (i.e transactionCodes)
+   */
+  function parseOutAndAppendTransaction(data, enroll, userTransactionCodes) {
+    let DOMarr = [];
+    for (let i = 0; i < userTransactionCodes.length; i++) {
+      let currTCode = userTransactionCodes[i];
+      // array of keys
+      let obj = {};
+      obj[currTCode] = [];
+      for (let j = 0; j < data[currTCode].length; j++) {
+        let currObj = data[currTCode][j];
+        let currCourseDOM = constructEnrolledCourses(currObj);
+        obj[currTCode].unshift(currCourseDOM);
+      }
+      DOMarr.unshift(obj);
+    }
+    for (let i = 0; i < DOMarr.length ; i++) {
+      let currentObj = DOMarr[i];
+      let currentTCode = Object.keys(currentObj)[0];
+      let currDOMs = currentObj[currentTCode];
 
-  // sending data like 'CSE 121': [date, availableSeats, subject, description]
+      let tCode = document.createElement("p");
+      tCode.textContent = currentTCode;
+      tCode.classList.add("enrolled-content");
+      tCode.classList.add("tCode-title");
+      enroll.appendChild(tCode);
+      for (let j = 0; j < currDOMs.length ;j++) {
+        let currDOM = currDOMs[j];
+        enroll.appendChild(currDOM);
+      }
+    }
+  }
+
+  /**
+   * This method constructs the enrolled courses for the user and returns it as a DOM object.
+   * @param {Object} data - Object that contains the data for the enrolled courses
+   * @returns {DOM Object} - A fully built DOM object that represents the enrolled courses
+   */
   function constructEnrolledCourses(data) {
     let key = Object.keys(data)[0];
     let mainBody = document.createElement("article");
@@ -126,6 +165,10 @@
     return mainBody;
   }
 
+  /**
+   * Function that fetches to the server the specific search based on the searchTerm that was
+   * passed. It then displays the courses that match the search term.
+   */
   async function fetchSearchBar() {
     try {
       let searchTerm = id("course-input").value.trim();
@@ -140,30 +183,47 @@
         currCourseDOM.addEventListener('click', openCourse);
         classList.appendChild(currCourseDOM);
       }
-
+      id("reset-button").classList.remove("hidden");
     } catch (err) {
-      console.log(err);
+      handleErr(err);
     }
   }
 
-  function checkForFilter() {
+  /**
+   * Function that adds event listeners on every filter checkbox. If any are clicked then
+   * it will call filterSearch to determine whether or not we need to filter.
+   */
+  async function checkForFilter() {
     let allBoxes = document.querySelectorAll('.filter-check-boxes input[type="checkbox"]');
     for (let i = 0; i < allBoxes.length; i++) {
-      allBoxes[i].addEventListener('change', filterSearch);
+      allBoxes[i].addEventListener('change', await filterSearch);
     }
   }
 
-  function filterSearch() {
+  /**
+   * filterSearch is a function that is called when a checkbox is clicked. It will determine
+   * whether or not we need to filter the search based on the checkbox that was clicked.
+   * If the checkbox is checked, we will callBuildSearch. If the checkbox is unchecked, we will
+   * call buildSearch with a null value.
+   */
+  async function filterSearch() {
     let category = this.parentNode.previousElementSibling.textContent.split(":")[0];
     if (this.checked) {
-      buildSearch(category, this);
+      await buildSearch(category, this);
     } else {
       mainArray[category].shift();
-      buildSearch(category, null);
+      await buildSearch(category, null);
     }
   }
 
-  function buildSearch(category, checkbox) {
+  /**
+   * buildSearch is a function that is called when a checkbox is clicked. It will determine if
+   * there are any boxes applied, if so, it will build a string fetch request based on
+   * all of the checkboxes that was applied and call fetchSearch to fetch the actual search.
+   * @param {String} category - String representing the category that was clicked
+   * @param {Boolean} checkbox - True/false on if the checkbox was clicked
+   */
+  async function buildSearch(category, checkbox) {
     if(checkbox !== null) {
       mainArray[category].unshift(checkbox.nextElementSibling.textContent);
     }
@@ -188,7 +248,7 @@
       if (buildQuery.endsWith("&")) {
         buildQuery = buildQuery.slice(0, -1);
       }
-      fetchSearch(buildQuery);
+      await fetchSearch(buildQuery);
     } else {
       let classList = id("classes");
       classList.innerHTML = '';
@@ -196,9 +256,23 @@
     }
   }
 
+  /**
+   * fetchSearch is a function that is called when we need to fetch the search based on the
+   * checkboxes that were clicked. It will fetch the search and display the courses that match
+   * the search. Otherwise display a message indicated no classes were found for the specific
+   * search.
+   * @param {String} buildQuery - String representing the query that was built
+   *                              from the checkboxes to fetch
+   */
   async function fetchSearch(buildQuery) {
     try {
-      let result = await fetch("/search?" + buildQuery);
+      let searchbar = id("course-input").value.trim();
+      let result;
+      if (searchbar !== '') {
+        result = await fetch("/search?className=" + searchbar + "&" + buildQuery);
+      } else {
+        result = await fetch("/search?" + buildQuery);
+      }
       let classList = id("classes");
       if (result.status === 200) {
         let data = await result.json();
@@ -219,10 +293,15 @@
         classList.appendChild(noClass);
       }
     } catch (err) {
-      console.log(err);
+      handleErr(err);
     }
   }
 
+  /**
+   * Helper method used in buildSearch to determine whether or not we need to build a search.
+   * @returns {Boolean} - True/false if the main array containing our categories of checkboxes
+   *                      is empty.
+   */
   function isMainArrEmpty() {
     let keys = Object.keys(mainArray);
     for (let i = 0; i < keys.length; i++) {
@@ -272,7 +351,7 @@
         classList.appendChild(currCourseDOM);
       }
     } catch (err) {
-      fetchErr();
+      handleErr(err);
     }
   }
 
@@ -334,7 +413,7 @@
       courseSections.insertBefore(courseSectionHeader(), courseSections.firstChild);
       qs('.body-course').appendChild(courseSections);
     } catch (err) {
-      console.log(err);
+      handleErr(err);
     }
   }
 
@@ -356,108 +435,123 @@
   }
 
   /**
-   * This method constructs the header you see above the course section detail
-   * @returns {Object} - A DOM that represents the header for the course section.
+   * This method creates a DOM element with the specified tag, text content, and CSS class.
+   * @param {string} tag - The HTML tag of the element.
+   * @param {string} text - The text content of the element.
+   * @param {string} className - The CSS class of the element.
+   * @returns {HTMLElement} - The created DOM element.
+   */
+  function createElement(tag, text, className) {
+    let element = document.createElement(tag);
+    element.textContent = text;
+    if (className) {
+      element.classList.add(className);
+    }
+    return element;
+  }
+
+  /**
+   * This method constructs the header you see above the course section detail.
+   * @returns {HTMLElement} - The constructed course section header.
    */
   function courseSectionHeader() {
     let classContainer = document.createElement("article");
     classContainer.classList.add("courseHeader-sec-detail");
 
-    let courseSection = document.createElement("p");
-    courseSection.textContent = "Section";
-    courseSection.classList.add("course-sec-header");
-
-    let courseCred = document.createElement("p");
-    courseCred.textContent = "Credits";
-    courseCred.classList.add("course-sec-header");
-
-    let courseDays = document.createElement("p");
-    courseDays.textContent = "Days";
-    courseDays.classList.add("course-sec-header");
-
-    let courseTime = document.createElement("p");
-    courseTime.textContent = "Time";
-    courseTime.classList.add("course-sec-header");
-
-    let courseCapacity = document.createElement("p");
-    courseCapacity.textContent = "Seats";
-    courseCapacity.classList.add("course-sec-header");
-
-    let courseEnroll = document.createElement("p");
-    courseEnroll.textContent = "Enroll";
-    courseEnroll.classList.add("course-sec-header");
-
-    classContainer.appendChild(courseSection);
-    classContainer.appendChild(courseCred);
-    classContainer.appendChild(courseDays);
-    classContainer.appendChild(courseTime);
-    classContainer.appendChild(courseCapacity);
-    classContainer.appendChild(courseEnroll);
+    // Create each header element using the createElement function
+    classContainer.appendChild(createElement("p", "Section", "course-sec-header"));
+    classContainer.appendChild(createElement("p", "Credits", "course-sec-header"));
+    classContainer.appendChild(createElement("p", "Days", "course-sec-header"));
+    classContainer.appendChild(createElement("p", "Time", "course-sec-header"));
+    classContainer.appendChild(createElement("p", "Seats", "course-sec-header"));
+    classContainer.appendChild(createElement("p", "Enroll", "course-sec-header"));
 
     return classContainer;
   }
 
   /**
-   *
-   * @param {Object} currentClass - object representing the current class from the
-   *                                array of classes
-   * @param {Integer} index - indicating which section ID we are
-   * @returns {Object} - Fully built DOM of the specific class information needed to append
-   *                     to the main view.
+   * This method constructs a paragraph element with the specified text content and CSS class.
+   * @param {string} text - The text content of the paragraph.
+   * @param {string} className - The CSS class of the paragraph.
+   * @returns {HTMLParagraphElement} - The constructed paragraph element.
+   */
+  function createParagraph(text, className) {
+    let paragraph = document.createElement("p");
+    paragraph.textContent = text;
+    paragraph.classList.add(className);
+    return paragraph;
+  }
+
+  /**
+   * This method constructs a checkbox input element for course enrollment.
+   * @param {boolean} isVisible - Indicates whether the enrollment box should be visible
+   *                              based on available seats.
+   * @returns {HTMLInputElement} - The constructed checkbox input element.
+   */
+  function createEnrollmentBox(isVisible) {
+    let enrollmentBox = document.createElement("input");
+    enrollmentBox.type = "checkbox";
+    enrollmentBox.className = "enrollBox course-sec-info";
+    enrollmentBox.name = "enrollBox";
+    if (!isVisible) {
+      enrollmentBox.classList.add("hide");
+    }
+    enrollmentBox.addEventListener('change', openEnrollment);
+    return enrollmentBox;
+  }
+
+  /**
+   * This method constructs the hidden paragraph element containing the class ID.
+   * @param {string} classId - The ID of the class.
+   * @returns {HTMLParagraphElement} - The constructed hidden paragraph element.
+   */
+  function createHiddenId(classId) {
+    let hiddenId = document.createElement("p");
+    hiddenId.textContent = classId;
+    hiddenId.id = "hiddenId";
+    hiddenId.classList.add("hidden");
+    return hiddenId;
+  }
+
+  /**
+   * This method constructs the class container element with all the necessary information.
+   * @param {Object} currentClass - Object representing the current class from the array of classes.
+   * @param {Integer} index - Indicating which section ID we are.
+   * @returns {HTMLElement} - Fully built DOM of the specific class information needed to
+   *                          append to the main view.
    */
   function constructCourseSectionHelper(currentClass, index) {
     let classContainer = document.createElement("article");
     classContainer.classList.add("course-sec-detail");
 
-    let courseSection = document.createElement("p");
-    courseSection.textContent = indexToAlphabet(index);
-    courseSection.classList.add("course-sec-info");
-
-    let courseCred = document.createElement("p");
-    courseCred.textContent = currentClass.credits;
-    courseCred.classList.add("course-sec-info");
-
-    let courseDays = document.createElement("p");
-    courseDays.textContent = currentClass.date.split(/\s{2}/)[0];
-    courseDays.classList.add("course-sec-info");
-
-    let courseTime = document.createElement("p");
-    courseTime.textContent = currentClass.date.split(/\s{2}/)[1];
-    courseTime.classList.add("course-sec-info");
-
-    let courseCapacity = document.createElement("p");
-    courseCapacity.textContent = currentClass.availableSeats + "/" + currentClass.totalSeats;
-    courseCapacity.classList.add("course-sec-info");
-
-    let courseEnrollmentBox = document.createElement("input");
-    courseEnrollmentBox.type = "checkbox";
-    courseEnrollmentBox.className = "enrollBox";
-    courseEnrollmentBox.name = "enrollBox";
-    courseEnrollmentBox.classList.add("course-sec-info");
-    courseEnrollmentBox.addEventListener('change', openEnrollment);
-
-    let hiddenId = document.createElement("p");
-    hiddenId.textContent = currentClass.id;
-    hiddenId.id = "hiddenId";
-    hiddenId.classList.add("hidden");
+    let courseSection = createParagraph(indexToAlphabet(index), "course-sec-info");
+    let courseCred = createParagraph(currentClass.credits, "course-sec-info");
+    let courseDays = createParagraph(currentClass.date.split(/\s{2}/)[0], "course-sec-info");
+    let courseTime = createParagraph(currentClass.date.split(/\s{2}/)[1], "course-sec-info");
+    let courseCapacity = createParagraph(currentClass.availableSeats + "/" +
+                                        currentClass.totalSeats, "course-sec-info");
+    let courseEnrollmentBox = createEnrollmentBox(currentClass.availableSeats !== 0);
+    let hiddenId = createHiddenId(currentClass.id);
 
     classContainer.appendChild(courseSection);
     classContainer.appendChild(courseCred);
     classContainer.appendChild(courseDays);
     classContainer.appendChild(courseTime);
     classContainer.appendChild(courseCapacity);
-    if (currentClass.availableSeats === 0) {
-      courseEnrollmentBox.classList.add("hide");
-    }
     classContainer.appendChild(courseEnrollmentBox);
     classContainer.appendChild(hiddenId);
 
     return classContainer;
   }
 
+  /**
+   * Function calls showEnrollButton if a current checkbox is clicked.
+   * Otherwise it will check if user deselected all buttons. If so it will
+   * hide the enrollment button.
+   */
   function openEnrollment() {
     if(this.checked) {
-      showEnrollButton(this);
+      showEnrollButton();
     } else {
       let allEnrollBox = qsa('.enrollBox');
       let allUnchecked = false;
@@ -473,7 +567,10 @@
     }
   }
 
-  function showEnrollButton(checkBox) {
+  /**
+   * This function shows the enroll button if it is not already shown.
+   */
+  function showEnrollButton() {
     if (qs('.enrollButton') === null) {
       let enrollButton = document.createElement("button");
       enrollButton.textContent = "Enroll";
@@ -485,43 +582,67 @@
     }
   }
 
+  /**
+   * This function officially enrolls the user in the class by calling a POST fetch
+   * request. It will determine whether or not it was a success. If it failed,
+   * it will properly display the desired error message.
+   */
   async function enrollOfficial() {
-    if (enrollmentSafetyCheck()) {
-      let params = new FormData();
-      let username = localStorage.key(0);
-      let className = qsa('.title')[1].textContent.split(' - ')[0].trim();
-      let userId = id('hiddenId').textContent;
-      params.append("userName", username);
-      params.append("className", className);
-      params.append("id", userId);
-      let response = await fetch("/enrollCourse", {method: "POST", body: params});
-      if (response.status === 200) {
-        // success display message that it was successful and after 2 seconds close the course page
-        let successMsg = document.createElement("div");
-        successMsg.classList.add("success");
-        successMsg.textContent = "Success enrollment! Your enrollment receipt code is: \'" + await response.text() + "\'";
+    try {
+      if (enrollmentSafetyCheck()) {
+        let params = new FormData();
+        let username = localStorage.key(0);
+        let className = qsa('.title')[1].textContent.split(' - ')[0].trim();
+        let userId = id('hiddenId').textContent;
+        params.append("userName", username);
+        params.append("className", className);
+        params.append("id", userId);
+        let response = await fetch("/enrollCourse", {method: "POST", body: params});
+        if (response.status === 200) {
+          // success display message that it was successful and after 2 seconds close the course page
+          let successMsg = document.createElement("div");
+          successMsg.classList.add("success");
+          successMsg.textContent = "Success enrollment! Your enrollment receipt code is: \'" +
+                                    await response.text() + "\'";
 
-        id('error-message-course').insertAdjacentElement('afterend', successMsg);
+          id('error-message-course').insertAdjacentElement('afterend', successMsg);
 
-        // uncheck the box
-        let allEnrollBox = qsa('.enrollBox');
-        for (let i = 0; i < allEnrollBox.length; i++) {
-          allEnrollBox[i].checked = false;
+          enrollOfficialHelper();
+        } else {
+          id("error-message-course").textContent = await response.text();
+          id("error-message-course").classList.add("error");
         }
-
-        // after two seconds close the page for the user:
-        setTimeout(() =>{
-          if (id("pop-up-courses").classList.contains("active") && id("overlay2").classList.contains("active")) {
-            toggleCoursePage();
-          }
-        }, 3000);
-      } else {
-        id("error-message-course").textContent = await response.text();
-        id("error-message-course").classList.add("error");
       }
+    } catch (error) {
+      handleErr(error);
     }
   }
 
+  /**
+   * Helper method for enrollOfficial which essentially deselects any buttons once the
+   * user hits enroll and automatically closes the page after 2 seconds.
+   */
+  function enrollOfficialHelper() {
+    // uncheck the box
+    let allEnrollBox = qsa('.enrollBox');
+    for (let i = 0; i < allEnrollBox.length; i++) {
+      allEnrollBox[i].checked = false;
+    }
+
+    // after two seconds close the page for the user:
+    setTimeout(() =>{
+      if (id("pop-up-courses").classList.contains("active") &&
+          id("overlay2").classList.contains("active")) {
+        toggleCoursePage();
+      }
+    }, 2000);
+  }
+
+  /**
+   * This function is used to detect whether or not the enrollment was a success.
+   * Otherwise it will display the appropriate error message.
+   * @returns {Boolean} - True if the user is able to enroll, false otherwise.
+   */
   function enrollmentSafetyCheck() {
     // check if user is logged in
     if (localStorage.length === 0) {
@@ -547,6 +668,7 @@
       return true;
     }
   }
+
   /**
    * Method that converts a given integer to its respective alphabet
    * @param {Integer} index - Index representing the aphabet to be converted to
@@ -562,76 +684,62 @@
    * @returns {Object} - DOM object that contains the course overview information
    */
   function constructCoursePageOverview(data) {
+    // Create a section element for the overview content
     let overviewContent = document.createElement("section");
     overviewContent.classList.add("overview-content");
 
-    // container for course description
-    let containerDesc = document.createElement("section");
-    containerDesc.classList.add("containers");
+    // Create containers for different sections of the course overview
 
-    let courseDescTitle = document.createElement("p");
-    courseDescTitle.textContent = "Course Description: ";
-    courseDescTitle.classList.add("bold");
-
-    let courseDesc = document.createElement("p");
-    courseDesc.textContent = data.description;
-    courseDesc.classList.add("course-desc");
-
-    containerDesc.appendChild(courseDescTitle);
+    // Container for course description
+    let containerDesc = createContainer("Course Description: ");
+    let courseDesc = createParagraph(data.description, "course-desc");
     containerDesc.appendChild(courseDesc);
 
-    // container for course credits
-    let containerCreds = document.createElement("section");
-    containerCreds.classList.add("containers");
-
-    let courseCreditsTitle = document.createElement("p");
-    courseCreditsTitle.textContent = "Course Credits: ";
-    courseCreditsTitle.classList.add("bold");
-
-    let courseCredits = document.createElement("p");
-    courseCredits.textContent = data.credits;
-    courseCredits.classList.add("course-desc");
-
-    containerCreds.appendChild(courseCreditsTitle);
+    // Container for course credits
+    let containerCreds = createContainer("Course Credits: ");
+    let courseCredits = createParagraph(data.credits, "course-desc");
     containerCreds.appendChild(courseCredits);
 
-    // container for course level
-    let containerLevel = document.createElement("section");
-    containerLevel.classList.add("containers");
-
-    let courseLevelTitle = document.createElement("p");
-    courseLevelTitle.textContent = "Course Level:";
-    courseLevelTitle.classList.add("bold");
-
-    let courseLevel = document.createElement("p");
-    courseLevel.textContent = data.courseLevel;
-    courseLevel.classList.add("course-desc");
-
-    containerLevel.appendChild(courseLevelTitle);
+    // Container for course level
+    let containerLevel = createContainer("Course Level:");
+    let courseLevel = createParagraph(data.courseLevel, "course-desc");
     containerLevel.appendChild(courseLevel);
 
-    // container for course gpa
-    let containerGPA = document.createElement("section");
-    containerGPA.classList.add("containers");
-
-    let averageGPATitle = document.createElement("p");
-    averageGPATitle.textContent = "Average GPA: ";
-    averageGPATitle.classList.add("bold");
-
-    let averageGPA = document.createElement("p");
-    averageGPA.textContent = data.avgGPA;
-    averageGPA.classList.add("course-desc");
-
-    containerGPA.appendChild(averageGPATitle);
+    // Container for average GPA
+    let containerGPA = createContainer("Average GPA: ");
+    let averageGPA = createParagraph(data.avgGPA, "course-desc");
     containerGPA.appendChild(averageGPA);
 
-    // connecting all DOMS together.
-    overviewContent.appendChild(containerDesc);
-    overviewContent.appendChild(containerCreds);
-    overviewContent.appendChild(containerLevel);
-    overviewContent.appendChild(containerGPA);
+    // Connect all containers to the overview content
+    appendContainers(overviewContent, containerDesc, containerCreds, containerLevel, containerGPA);
 
     return overviewContent;
+  }
+
+  /**
+   * Helper function to create a container for course overview sections.
+   * @param {string} title - The title of the container section.
+   * @returns {HTMLElement} - The created container element.
+   */
+  function createContainer(title) {
+    let container = document.createElement("section");
+    container.classList.add("containers");
+
+    let containerTitle = createParagraph(title, "bold");
+    container.appendChild(containerTitle);
+
+    return container;
+  }
+
+  /**
+   * Helper function to append multiple containers to a parent container.
+   * @param {HTMLElement} parent - The parent container to which other containers will be appended.
+   * @param {...HTMLElement} containers - The containers to be appended.
+   */
+  function appendContainers(parent, ...containers) {
+    containers.forEach(container => {
+      parent.appendChild(container);
+    });
   }
 
   /**
@@ -640,7 +748,6 @@
    * @returns {Object} - DOM object that contains the course information
    */
   function constructCourse(course) {
-    console.log(course);
     let courseContainer = document.createElement("article");
 
     let courseName = document.createElement("h2");
@@ -709,13 +816,14 @@
       await statusCheck(response);
       if (response.status === 200) {
         localStorage.removeItem(username);
+        id("error-message-enroll").textContent = "";
         id("login").classList.remove("hidden");
         id("display-login").classList.remove("hidden");
         id("signout").classList.add("hidden");
         id("displayUser").classList.add("hidden");
       }
     } catch (error) {
-      handleSignoutErr(error);
+      handleErr(error);
     }
   }
 
@@ -747,7 +855,7 @@
           loginOfficialHelper(result, username, password, saveUser);
         }
       } catch (err) {
-        handleLoginErr(err);
+        handleErr(err);
       }
     } else {
       let msg = id("error-message");
@@ -770,6 +878,7 @@
       id("signout").classList.remove("hidden");
       id("displayUser").textContent = "Welcome, " + username;
       id("displayUser").classList.remove("hidden");
+      id("error-message-enroll").textContent = "";
       let localStorageData = [password, saveUser];
       window.localStorage.setItem(username, JSON.stringify(localStorageData));
     } else {
@@ -791,23 +900,12 @@
     }
   }
 
-  /**
-   *  Function that handles the error when the user tries to sign out.
-   * @param {Object} err - error object that is thrown
-   */
-  function handleSignoutErr(err) {
-    let frame = qs("body");
-    frame.innerHTML = ' ';
-    let error = document.createElement("p");
-    error.textContent = "Unable to sign out user due to error: " + err;
-    frame.appendChild(error);
-  }
 
   /**
    * Function that handles the error when the user tries to log in.
    * @param {Object} err - error object that is thrown
    */
-  function handleLoginErr(err) {
+  function handleErr(err) {
     let frame = qs("body");
     frame.innerHTML = ' ';
     let error = document.createElement("p");
@@ -826,13 +924,6 @@
       throw new Error(`Error ${res.status}: ${res.statusText}`);
     }
     return res;
-  }
-
-  /**
-   * Universal error that signifies that there was a error during or after a fetch
-   */
-  function fetchErr() {
-    console.error("There was an error with the fetch request");
   }
 
   /**

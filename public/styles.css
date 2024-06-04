@@ -367,6 +367,10 @@ a {
   overflow-y: auto;
 }
 
+#reset-button {
+  margin-left: 15px;
+}
+
 #overlay.active, #overlay2.active, #overlay3.active {
   opacity: 1;
   pointer-events: all;
