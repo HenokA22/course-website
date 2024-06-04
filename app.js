@@ -5,8 +5,6 @@ const app = express();
 const multer = require("multer");
 const sqlite = require("sqlite");
 const sqlite3 = require("sqlite3");
-const cookieParser = require("cookie-parser");
-// how to use cookie parser: https://github.com/expressjs/cookie-parser
 const SUCCESS_CODE = 200;
 const SERVER_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
@@ -21,12 +19,13 @@ let confirmationCodes = new Set();
 let courseHistory = {};
 
 // for application/x-www-form-urlencoded
-app.use(express.urlencoded({extended: true})); // built-in middleware
-// for application/json
-app.use(express.json()); // built-in middleware
-// for multipart/form-data (required with FormData)
-app.use(multer().none()); // requires the "multer" module
+app.use(express.urlencoded({extended: true}));
 
+// for application/json
+app.use(express.json());
+
+// for multipart/form-data (required with FormData)
+app.use(multer().none()); 
 
 /**
  *
@@ -68,7 +67,8 @@ app.post("/signout", async function(req, res) {
       let db = await getDBConnection();
       let result = await db.get(query, [username, password]);
       if (result !== undefined) {
-        let updateLoginStatus = "UPDATE login SET loginstatus = ? WHERE username = ? AND password = ?;";
+        let updateLoginStatus = "UPDATE login SET loginstatus = ? WHERE username = ? " +
+                                "AND password = ?;";
         await db.run(updateLoginStatus, ["false", username, password]);
 
         await closeDbConnection(db);
@@ -80,7 +80,7 @@ app.post("/signout", async function(req, res) {
           .send("Signout failed.");
       }
     } catch (error) {
-      console.log(error);
+      handleError(res, error);
     }
   } else {
     res.type("text").status(USER_ERROR_CODE)
@@ -117,8 +117,7 @@ app.post("/login", async function(req, res) {
       }
     } catch (error) {
       // an error occured with one of the queries here
-      // Change this later
-      console.log(error);
+      handleError(res, error);
     }
   } else {
     // Case such that user didn't add there username or password.
@@ -150,7 +149,7 @@ app.get("/itemDetails/:className", async function(req, res) {
       }
     } catch (error) {
       res.type("text").status(SERVER_ERROR_CODE)
-      .send("An error occurred on the server. Try again later.");
+        .send("An error occurred on the server. Try again later.");
     }
   } else {
     res.type("text").send(USER_ERROR_CODE)
@@ -175,93 +174,99 @@ app.post("/enrollCourse", async function(req, res) {
 
       // Extracting the text (true / false)
       let isUserLogin = result.loginStatus;
-      if(isUserLogin === "true") {
-
-        // Note that classname is guranteed to be filled as client picks a class to make a request
-        let query2 = "SELECT * FROM classes WHERE shortName = ? AND id = ?;";
-        let classInfo = await db.get(query2, [className, classId]);
-        if(classInfo !== undefined) {
-
-          // The class does exist so now check its capacity, the date is grabbed to be used later
-          let totalSeatsVal = classInfo.availableSeats;
-          let toBeEnrolledCourseDate = classInfo.date;
-          // Checking if space availability is valid
-          if(totalSeatsVal > 0) {
-
-            // The student can enroll meets the space requirements so now check schedule conflict
-            let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
-            let classResult = await db.all(query3, userName);
-            // An array of classes that the user is currently taking
-            let currentCourses = [];
-
-            // Transfering db.all result -> values of objects inside of array
-            for (let i = 0; i < classResult.length; i += 1) {
-              let oneMatch = classResult[i];
-              currentCourses.push(oneMatch);
-            }
-            // Check all the dates of each class
-            let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
-
-            /**
-             * No over lap takes place therefore the following code function is to add a course to
-             * users schedule
-             */
-            if (!conflictInScheduleResult) {
-              /**
-               * Last check, does the user already have this class in their course history
-               */
-               // can't you do a query?
-               // "[hi, casted, string]"
-               // call parse-> [hi, casted, string]
-              let addingAnNewClass = true;
-              for (let i = 0; i < currentCourses.length; i += 1) {
-                // Check for if a class that this user is taking matches the requested class to add
-                if (currentCourses[i].takingCourse === className) {
-                  addingAnNewClass = false;
-                  i = currentCourses.length;
-                }
-              }
-              // Passed all conditions therefore updating the database is being represented below
-              if (addingAnNewClass) {
-                // Test this later
-                let newCode = await helperFunction(db, className, userName, currentCourses, classId);
-
-                res.type("text").status(SUCCESS_CODE)
-                .send("Successfully added course, this is the confirmation code: " + newCode);
-              } else {
-                res.type("text").status(USER_ERROR_CODE)
-                  .send("Cannot enroll in a class you have already enrolled.");
-              }
-            } else {
-              res.type("text").status(USER_ERROR_CODE)
-               .send("A conflict in your schedule has occured");
-            }
-          } else {
-            res.type("text").status(USER_ERROR_CODE)
-              .send("This course is add capacity. Cannot enroll");
-          }
-        } else {
-          res.type("text").status(USER_ERROR_CODE)
-            .send("This class does not exist");
-        }
-      } else {
-        res.type("text").status(USER_ERROR_CODE)
-          .send("You are not logged in. Please sign in");
-      }
+      checkLoginStatus(isUserLogin, className, classId, userName, db, res);
     } catch (error) {
       console.error("Error:", error);
     }
   } else {
-    /**
-     * I am gonna assume that if a username isn't found then the user is not logged in
-     * The implementation of what body params that get send back is going to depend on how this
-     * is hooked up on the front end.
-     */
-
     res.type("text").status(USER_ERROR_CODE)
       .send("No username is specified. Please login in before trying to adding a class");
   }
 });
+
+/**
+ *
+ * @param {Boolean} isUserLogin - Boolean representing if the user is logged in or not
+ * @param {String} className - name of the short name class
+ * @param {Integer} classId - id of the short name class
+ * @param {String} userName - name of the user
+ * @param {Object} db - SQLite database connection
+ * @param {Object} res - response object used to send back to the client
+ */
+async function checkLoginStatus(isUserLogin, className, classId, userName, db, res) {
+  if(isUserLogin === "true") {
+
+    // Note that classname is guranteed to be filled as client picks a class to make a request
+    let query2 = "SELECT * FROM classes WHERE shortName = ? AND id = ?;";
+    let classInfo = await db.get(query2, [className, classId]);
+    if(classInfo !== undefined) {
+
+      // The class does exist so now check its capacity, the date is grabbed to be used later
+      let totalSeatsVal = classInfo.availableSeats;
+      let toBeEnrolledCourseDate = classInfo.date;
+
+      // Checking if space availability is valid
+      if(totalSeatsVal > 0) {
+
+        let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
+        let currentCourses = await db.all(query3, userName);
+
+        await checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res);
+      } else {
+        res.type("text").status(USER_ERROR_CODE)
+          .send("This course is add capacity. Cannot enroll");
+      }
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+        .send("This class does not exist");
+    }
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("You are not logged in. Please sign in");
+  }
+}
+
+/**
+ *
+ * @param {Object} db - The SQLite database connection.
+ * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
+ * @param {Object} currentCourses - An array of courses that the user is currently taking
+ * @param {String} className - The name of the class short name the user wants to enroll in
+ * @param {String} userName - The username of the logged in user
+ * @param {Integer} classId - The id of the class the user wants to enroll in
+ * @param {Object} res - response object used to send back to the client
+ */
+async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res) {
+  // Check all the dates of each class
+  let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses, res);
+
+  //  No over lap takes place therefore the following code function is to add a course to users schedule
+  if (!conflictInScheduleResult) {
+    let addingAnNewClass = true;
+    for (let i = 0; i < currentCourses.length; i += 1) {
+
+      // Check for if a class that this user is taking matches the requested class to add
+      if (currentCourses[i].takingCourse === className) {
+        addingAnNewClass = false;
+        i = currentCourses.length;
+      }
+    }
+
+    // Passed all conditions therefore updating the database is being represented below
+    if (addingAnNewClass) {
+      let newCode = await helperFunction(db, className, userName, currentCourses, classId, res);
+
+      res.type("text").status(SUCCESS_CODE)
+      .send("Successfully added course, this is the confirmation code: " + newCode);
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+        .send("Cannot enroll in a class you have already enrolled.");
+    }
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("A conflict in your schedule has occured");
+  }
+}
 
 // Performs a search on the data base for classes that match the search term and filters.
 // ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
@@ -296,6 +301,18 @@ app.get("/search", async function(req, res) {
     }
   }
 
+  constructSearchQueryHelper(className, classQueryUsed, query, validFilters, res);
+});
+
+/**
+ *
+ * @param {String} className - The name of the class short name the user wants to enroll in
+ * @param {Boolean} classQueryUsed - Boolean representing if the classQuery was used
+ * @param {String} query - empty query used to store the resultant query from createQuery
+ * @param {Object} validFilters - array of possible valid filters we have
+ * @param {Object} res - response object used to send back to the client
+ */
+async function constructSearchQueryHelper(className, classQueryUsed, query, validFilters, res) {
   // Valid Filters after completions should be ["date", "M", "F"] for example
   let result = await createQuery(className, classQueryUsed, query, validFilters);
   query = result[0];
@@ -325,7 +342,7 @@ app.get("/search", async function(req, res) {
         .send("An error occurred on the server. Try again later.");
     }
   }
-});
+}
 
 /** Sends back information of entire history of saved user schedules */
 app.get("/previousTransactions", async function(req, res) {
@@ -336,35 +353,45 @@ app.get("/previousTransactions", async function(req, res) {
   let query = "SELECT loginStatus FROM login WHERE username = ?;";
   // have a way to denote whether or not the user is signed in.
   try {
-    if (username) {
-      let db = await getDBConnection();
-      let result = await db.get(query, username);
-      await closeDbConnection(db);
-      // Extracting the text (true / false)
-      let isUserLogin = result.loginStatus;
-      if (isUserLogin === "true") {
-        /**
-         * Get all schedules of courses for this user
-         */
-        if (Object.keys(courseHistory).length === 0) {
-          res.type("text").status(USER_ERROR_CODE)
-            .send("No course history for this user");
-        } else {
-          let userPastSchedules = courseHistory[username];
-          // Sending back all users past -- "transactions" -- course information
-          res.json(userPastSchedules);
-        }
-      } else {
-        res.type("text").status(USER_ERROR_CODE)
-            .send("You are not logged in. Please sign in");
-      }
-    }
+    sendTransactionHelper(username, query, res);
   } catch (error) {
     // an error occured with one of the queries here
     // Change this later
     console.log(error);
   }
 });
+
+/**
+ * Helper method that sends the courseHistory back to the client.
+ * @param {String} username - username of the user
+ * @param {String} query - String representing the query
+ * @param {Object} res - response object used to send back to the client
+ */
+async function sendTransactionHelper(username, query, res) {
+  if (username) {
+    let db = await getDBConnection();
+    let result = await db.get(query, username);
+    await closeDbConnection(db);
+    // Extracting the text (true / false)
+    let isUserLogin = result.loginStatus;
+    if (isUserLogin === "true") {
+      /**
+       * Get all schedules of courses for this user
+       */
+      if (Object.keys(courseHistory).length === 0) {
+        res.type("text").status(USER_ERROR_CODE)
+          .send("No course history for this user");
+      } else {
+        let userPastSchedules = courseHistory[username];
+        // Sending back all users past -- "transactions" -- course information
+        res.json(userPastSchedules);
+      }
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+          .send("You are not logged in. Please sign in");
+    }
+  }
+}
 
 /**
  * Creates an full query depending on the search / filter conditions specified
@@ -391,18 +418,7 @@ async function createQuery(className, classQueryUsed, query, validFilters) {
     // Regular expression used to match any digit
     const regex = /\d/;
 
-    // Test to see if search term is a short name or full name of a class
-    if(regex.test(className)) {
-
-      // Search used shortname
-      query += "SELECT * FROM classes WHERE (shortName LIKE ?";
-      query = applyFiltersToQuery(query, validFilters);
-    } else {
-      query += "SELECT * FROM classes WHERE (name LIKE ?";
-
-      // Regular class name used in search
-      query = applyFiltersToQuery(query, validFilters);
-    }
+    query = helperCreateQuery(regex, query);
   } else {
 
     // reconstruct query based off data
@@ -410,6 +426,27 @@ async function createQuery(className, classQueryUsed, query, validFilters) {
     query = applyFiltersToQuery(query, validFilters);
   }
   return [query, searchBarNotEmpty];
+}
+
+/**
+ * Helper method used to break down createQuery
+ * @param {String} regex - regular expressed used to match any digit
+ * @param {String} query - current query used in createQuery
+ * @return {String} - returning back the string query after modification
+ */
+function helperCreateQuery(regex, query) {
+  // Test to see if search term is a short name or full name of a class
+  if(regex.test(className)) {
+    // Search used shortname
+    query += "SELECT * FROM classes WHERE (shortName LIKE ?";
+    query = applyFiltersToQuery(query, validFilters);
+  } else {
+    query += "SELECT * FROM classes WHERE (name LIKE ?";
+
+    // Regular class name used in search
+    query = applyFiltersToQuery(query, validFilters);
+  }
+  return query;
 }
 
 /**
@@ -457,23 +494,7 @@ function applyFiltersToQuery(query, validFilters) {
       query += ") AND ("
     }
 
-    // traversing the values of a filter
-    for (let j = 1; j < nameAndValuesForAFilter.length; j += 1) {
-
-      // The query structure differs based on if the date filter is applied.
-      if (name === "date") {
-        query += name + " LIKE \"%" +  nameAndValuesForAFilter[j] + "%\"";
-      } else if (name === "subject") {
-        query += name + " = " + "\"" + nameAndValuesForAFilter[j] + "\"";
-      } else {
-        query += name + " = " + nameAndValuesForAFilter[j];
-      }
-
-      // Checking whether or not another filter options is needed
-      if (j !== (nameAndValuesForAFilter.length - 1)) {
-        query += " OR ";
-      }
-    }
+    query = ApplyConditionFilterHelper(nameAndValuesForAFilter, name, query);
 
     // Complete of the filters applied portion of the query with a closing parenthesis
     query += ")";
@@ -493,6 +514,34 @@ function applyFiltersToQuery(query, validFilters) {
   return query;
 }
 
+/**
+ * Helper function used to further construct the query but broken down into this method
+ * for code quality.
+ * @param {Object} nameAndValuesForAFilter - array  of all the filters being applied
+ * @param {String} name - name of the class
+ * @param {String} query - overall query we are constructing based on filters
+ * @returns {String} - query representing what we are adding
+ */
+function ApplyConditionFilterHelper(nameAndValuesForAFilter, name, query) {
+  // traversing the values of a filter
+  for (let j = 1; j < nameAndValuesForAFilter.length; j += 1) {
+
+    // The query structure differs based on if the date filter is applied.
+    if (name === "date") {
+      query += name + " LIKE \"%" +  nameAndValuesForAFilter[j] + "%\"";
+    } else if (name === "subject") {
+      query += name + " = " + "\"" + nameAndValuesForAFilter[j] + "\"";
+    } else {
+      query += name + " = " + nameAndValuesForAFilter[j];
+    }
+
+    // Checking whether or not another filter options is needed
+    if (j !== (nameAndValuesForAFilter.length - 1)) {
+      query += " OR ";
+    }
+  }
+  return query;
+}
 
 /**
  * Primarly this function is meant to factor out code. The two purposes it serves is 1, updating the
@@ -505,26 +554,23 @@ function applyFiltersToQuery(query, validFilters) {
  * @param {Integer} id - An id representing the id of the course we are enrolling in
  * @returns {String} - Represents a randomized 6 digit string code to be sent to the user.
  */
-async function helperFunction(db, className, userName, currentCourses, id) {
+async function helperFunction(db, className, userName, currentCourses, id, res) {
   try {
     // Updating the database available seat count now
     let updateSeatCount = "UPDATE classes SET availableSeats = availableSeats - 1" +
     " WHERE shortName = ? AND id = ?;";
     await db.run(updateSeatCount, [className, id]);
 
-    // No need to store metadata into a variable (look later to remove it)
-
-    // Insert the course schedule in backend now
-
     // Now updating the database to reflect all new courses on the backend
     let sql = "INSERT INTO userCourses (classId, username, takingCourse) VALUES (?, ?, ?);";
     await db.run(sql, [id, userName, className]);
 
-    // creates the code
     let newCode = createCode();
 
-    // Gather all the information for each course and add it to courseHistory array
-    // update the currentCourses to now include the newly inserted tuple.
+    /**
+     * Gather all the information for each course and add it to courseHistory array
+     * update the currentCourses to now include the newly inserted tuple.
+     */
     let newClassRes = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
     currentCourses = await db.all(newClassRes, userName);
 
@@ -533,35 +579,47 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     * Then applying then assembling that into a larger array that represents what the
     * student is currently taking.
     */
-    let studentClasses = await getStudentClassesInfo(db, currentCourses);
+    let studentClasses = await getStudentClassesInfo(db, currentCourses, res);
 
-    /**
-    * adding new "transaction(adding a class) to be mapped to a user up to date
-    * course schedule.
-    */
-    let newTransactionKey = newCode;
-
-    // Adding user new current schedule to course history
-    let keys = Object.keys(courseHistory);
-    let isNew = true;
-    for (let i = 0; i < keys.length; i++) {
-      let currUsername = keys[i];
-      if (currUsername === userName) {
-        isNew = false;
-        let currTransactionObj = courseHistory[currUsername];
-        // inserting a new transactionKey for the new student class
-        currTransactionObj[newTransactionKey] = studentClasses;
-      }
-    }
-    if (isNew) {
-      courseHistory[userName] = {};
-      courseHistory[userName][newTransactionKey] = studentClasses;
-    }
+    await helperConstructCourseHistory(newCode, studentClasses, userName);
 
     await closeDbConnection(db);
     return newCode;
   } catch (error) {
-    console.error("Error:", error);
+    handleError(res, error);
+  }
+}
+
+/**
+ * Helper function used in helperFunction to add the newly course and enrollment confirmation
+ * to the courseHistory of the person.
+ * @param {String} newCode - String representing the confirmation of enrollment
+ * @param {Object} studentClasses - array representing the curring classes user is enrolled in
+ * @param {*} userName - name of the user who is logged in.
+ */
+async function helperConstructCourseHistory(newCode, studentClasses, userName) {
+  /**
+  * adding new "transaction(adding a class) to be mapped to a user up to date
+  * course schedule.
+  */
+  let newTransactionKey = newCode;
+
+  // Adding user new current schedule to course history
+  let keys = Object.keys(courseHistory);
+  let isNew = true;
+  for (let i = 0; i < keys.length; i++) {
+    let currUsername = keys[i];
+    if (currUsername === userName) {
+      isNew = false;
+      let currTransactionObj = courseHistory[currUsername];
+
+      // inserting a new transactionKey for the new student class
+      currTransactionObj[newTransactionKey] = studentClasses;
+    }
+  }
+  if (isNew) {
+    courseHistory[userName] = {};
+    courseHistory[userName][newTransactionKey] = studentClasses;
   }
 }
 
@@ -600,7 +658,7 @@ function createCode() {
  * @returns {Promise<Array>} - A Promise that resolves to an array of objects,
  * where each object contains information about a course.
  */
-async function getStudentClassesInfo(db, currentCourses) {
+async function getStudentClassesInfo(db, currentCourses, res) {
   try {
     // Array to store information about each course the student is taking
     let studentClasses = [];
@@ -621,7 +679,7 @@ async function getStudentClassesInfo(db, currentCourses) {
 
     return studentClasses;
   } catch (error) {
-    console.error("Error", error);
+    handleError(res, error);
   }
 }
 
@@ -632,23 +690,25 @@ async function getStudentClassesInfo(db, currentCourses) {
  * @param {String[]} currentCourses - An array of courses that the user is current taking
  * @return - A boolean representing if a conflict does indeed occur, true if so, if not false
  */
-async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
+async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
   let conflictInSchedule = false;
   try {
     for (let i = 0; i < currentCourses.length; i += 1) {
-      let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i]);
+      let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i], res);
 
        /**
         * Check each day the to be enrolled course takes places against logged in user
         * current course days
         */
        for (let j = 0; j < santizedInfo[2].length; j += 1) {
-         // compares for every day in the selectedCourse we want to enroll
-         // make sure if one of the days is equal
+
+         // compares for every day in the selectedCourse we want to enroll make sure if one of the days is equal
          if ((santizedInfo[3]).includes((santizedInfo[2])[j])) {
+
            // Checking if two times on the same day overlap
            conflictInSchedule = timesOverlap(santizedInfo[0], santizedInfo[1]);
            if (conflictInSchedule) {
+
              // Exit both loops since conflict has been found
              i = currentCourses.length;
              j = santizedInfo[2].length;
@@ -658,7 +718,7 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
      }
      return conflictInSchedule;
   } catch (error) {
-    console.error("Error", error);
+    handleError(res, error);
   }
 }
 
@@ -672,8 +732,9 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
  * @returns An array of santatized day and time information for both class the user is taking and
  *          request classes
  */
-async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
+async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse, res) {
   try {
+
     // Accessing the nested date value from result of .get()
     let dateQuery = "SELECT date FROM classes WHERE shortName = ? AND id = ?;"
     let dateResultOB = await db.get(dateQuery, [currentCourse.takingCourse, currentCourse.classId]);
@@ -689,9 +750,6 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
     let currentCourseTimes = currentCourseDateSplit[1];
 
     // Splitting individual dates among each other
-    // courseDays: [M, W, T] (users course)
-    // currentCourseDays: [T, Th] (to be enrolled course)
-    //    - represents the entire history of users courses they've enrolled
     let selectedCourseDaysSplit = selectedCourseDays.split(" ");
     let currentCourseDaysSplit = currentCourseDays.split(" ");
 
@@ -702,7 +760,7 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
     returnArr.push(currentCourseDaysSplit);
     return returnArr;
   } catch (error) {
-    // Handle error later;
+    handleError(res, error);
   }
 }
 
@@ -713,9 +771,6 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
  * @returns {boolean} - True if the time ranges overlap, false otherwise.
  */
 function timesOverlap(range1, range2) {
-  // ex:
-  // '13:30-15:30'
-  // '9:30-10:30'
   let time1Arr = range1.split("-");
   let time2Arr = range2.split("-");
 
@@ -734,14 +789,17 @@ function timesOverlap(range1, range2) {
     let [bStartHour, bStartMinute] = b[0].split(":").map(Number);
 
     if (aStartHour === bStartHour) {
+
       // if the hours are equal compare the minutes
       return aStartMinute - bStartMinute;
     }
     return aStartHour - bStartHour;
   });
 
-  // check if the end time of the irst range is greater than the
-  // start time of the second range. If so we know there is a overlap.
+  /**
+   * check if the end time of the irst range is greater than the
+   * start time of the second range. If so we know there is a overlap.
+  */
   let isOverlap = allTimes[1][0] < allTimes[0][1];
   return isOverlap;
 }
@@ -769,6 +827,14 @@ async function closeDbConnection(db) {
   } catch (error) {
     console.error("Failed to close the database connection:", error);
   }
+}
+
+/**
+ * Handles errors in a try-catch block and sends an error response to the client.
+ * @param {Error} error - The error object.
+ */
+function handleError(res, error) {
+  res.status(SERVER_ERROR_CODE).text("Internal server error: " + error);
 }
 
 // tells the code to serve static files in a directory called 'public'
