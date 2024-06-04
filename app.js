@@ -223,10 +223,9 @@ app.post("/enrollCourse", async function(req, res) {
               }
               // Passed all conditions therefore updating the database is being represented below
               if (addingAnNewClass) {
-
                 // Test this later
                 let newCode = await helperFunction(db, className, userName, currentCourses, classId);
-                await closeDbConnection(db);
+
                 res.type("text").status(SUCCESS_CODE)
                 .send("Successfully added course, this is the confirmation code: " + newCode);
               } else {
@@ -332,35 +331,39 @@ app.get("/search", async function(req, res) {
 /** Sends back information of entire history of saved user schedules */
 app.get("/previousTransactions", async function(req, res) {
   // Check if username and passaword are in database
-  let username = req.body.username;
+  let username = req.query.username;
 
   // Checking the login status
   let query = "SELECT loginStatus FROM login WHERE username = ?;";
   // have a way to denote whether or not the user is signed in.
   try {
-    let db = await getDBConnection();
-    let result = await db.get(query, username);
-
-    // Extracting the text (true / false)
-    let isUserLogin = result.loginStatus;
-    if (isUserLogin === "true") {
-      /**
-       * Get all schedules of courses for this user
-       */
-
-      let userPastSchedules = courseHistory[username];
+    if (username) {
+      let db = await getDBConnection();
+      let result = await db.get(query, username);
       await closeDbConnection(db);
-
-      // Sending back all users past -- "transactions" -- course information
-      res.json(userPastSchedules);
-    } else {
-      res.type("text").status(USER_ERROR_CODE)
-          .send("You are not logged in. Please sign in");
+      // Extracting the text (true / false)
+      let isUserLogin = result.loginStatus;
+      if (isUserLogin === "true") {
+        /**
+         * Get all schedules of courses for this user
+         */
+        if (Object.keys(courseHistory).length === 0) {
+          res.type("text").status(USER_ERROR_CODE)
+            .send("No course history for this user");
+        } else {
+          let userPastSchedules = courseHistory[username];
+          // Sending back all users past -- "transactions" -- course information
+          res.json(userPastSchedules);
+        }
+      } else {
+        res.type("text").status(USER_ERROR_CODE)
+            .send("You are not logged in. Please sign in");
+      }
     }
   } catch (error) {
-  // an error occured with one of the queries here
-  // Change this later
-  console.log(error);
+    // an error occured with one of the queries here
+    // Change this later
+    console.log(error);
   }
 });
 
@@ -379,7 +382,7 @@ async function createQuery(className, classQueryUsed, query, validFilters) {
   let isPartial = await determinePartialSearch(className);
   console.log(isPartial);
 
-  if(isPartial) {
+  if(isPartial && className !== undefined) {
     searchBarNotEmpty = true;
     console.log("in partial flow");
     // Always use shortName
@@ -494,7 +497,7 @@ function applyFiltersToQuery(query, validFilters) {
     query += ")";
   }
 
-  query += ";";
+  query += "GROUP BY shortname;";
   return query;
 }
 
@@ -520,19 +523,18 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     // No need to store metadata into a variable (look later to remove it)
 
     // Insert the course schedule in backend now
-    // First get major value from database
-    let majorQuery = "SELECT major FROM userCourses WHERE username = ?;";
-    let majorResult = await db.get(majorQuery, userName);
-    let userMajor = majorResult.major;
 
     // Now updating the database to reflect all new courses on the backend
-    let sql = "INSERT INTO userCourses (classId, username, takingCourse, major) VALUES (?, ?, ?, ?);";
-    await db.run(sql, [id, userName, className, userMajor]);
+    let sql = "INSERT INTO userCourses (classId, username, takingCourse) VALUES (?, ?, ?);";
+    await db.run(sql, [id, userName, className]);
 
     // creates the code
     let newCode = createCode();
 
     // Gather all the information for each course and add it to courseHistory array
+    // update the currentCourses to now include the newly inserted tuple.
+    let newClassRes = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
+    currentCourses = await db.all(newClassRes, userName);
 
     /**
     * Grabing information from each course the student is taking putting that into an object
@@ -615,7 +617,7 @@ async function getStudentClassesInfo(db, currentCourses) {
     for (let i = 0; i < currentCourses.length; i += 1) {
 
       // Query to get information about the current course
-      let classInfoQuery = "SELECT date, availableSeats, subject, description FROM classes WHERE shortName = ? AND id = ?;";
+      let classInfoQuery = "SELECT date, availableSeats, subject, description, credits FROM classes WHERE shortName = ? AND id = ?;";
 
       // Execute the query to get class information
       let classInfoResult = await db.get(classInfoQuery, [currentCourses[i].takingCourse, currentCourses[i].classId]);
@@ -712,15 +714,6 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
   }
 }
 
-// Feature #6
-app.get("/viewTransaction", async function(req, res) {
-  /**
-   * 1. Check if user is logged in
-   *
-   * 2. Grab (transaction history ) schedule history from database?
-   */
-});
-
 /**
  * Checks if two time ranges overlap.
  * @param {string} range1 - The first time range in the format "x:xx-x:xx am/pm".
@@ -785,7 +778,6 @@ async function closeDbConnection(db) {
     console.error("Failed to close the database connection:", error);
   }
 }
-
 
 // tells the code to serve static files in a directory called 'public'
 app.use(express.static('public'));

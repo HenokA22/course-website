@@ -39,7 +39,7 @@
     <nav id="logo-header">
       <h1 id="logo">UW</h1>
       <span id="visual-schedule">
-        <a href="schedule/visual.html">View Visual Schedule</a>
+        <p>View Enrolled Schedule</p>
       </span>
     </nav>
 
@@ -66,6 +66,16 @@
       </section>
     </section>
     <section id="overlay"></section>
+
+    <section class="pop-up-enroll" id="pop-up-enroll">
+      <section class="pop-up-header3">
+        <section class="title2">User Transaction</section>
+        <button class="close-button2">&times;</button>
+      </section>
+      <section class="pop-up-body-enroll">
+      </section>
+    </section>
+    <section id="overlay3"></section>
     <!--
       ***
       Searching container is where the search bar will be
@@ -73,6 +83,7 @@
       ***
     -->
     <section id="searching-container">
+      <div id="error-message-enroll"></div>
       <h1>Find Courses:</h1>
       <div id="search-container">
         <label for="course-input">
@@ -119,8 +130,6 @@
           <label for="sociology">Sociology</label><br>
           <input type="checkbox" id="science" name="science">
           <label for="science">Science</label><br>
-          <input type="checkbox" id="art" name="art">
-          <label for="art">Art & Humanities</label><br>
         </form>
 
         <p>Credits:</p>

@@ -149,7 +149,7 @@ a {
   max-width: 80%;
 }
 
-.pop-up-courses {
+.pop-up-courses, .pop-up-enroll {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -163,12 +163,12 @@ a {
   max-width: 80%;
 }
 
-.pop-up-login.active, .pop-up-courses.active {
+.pop-up-login.active, .pop-up-courses.active, .pop-up-enroll.active {
   transform: translate(-50%, -50%) scale(1);
   transition: transform 0.3s;
 }
 
-.pop-up-header, .pop-up-header2 {
+.pop-up-header, .pop-up-header2, .pop-up-header3 {
   padding: 10px 15px;
   display: flex;
   justify-content: space-between;
@@ -176,12 +176,12 @@ a {
   border-bottom: 1px solid black;
 }
 
-.pop-up-header .title, .pop-up-header2 .title{
+.pop-up-header .title, .pop-up-header2 .title, .title2{
   font-size: 1.5rem;
   font-weight: bold;
 }
 
-.pop-up-header .close-button, .pop-up-header2 .close-button{
+.pop-up-header .close-button, .pop-up-header2 .close-button, .close-button2 {
   cursor: pointer;
   border: none;
   outline: none;
@@ -195,7 +195,7 @@ a {
   color: white;
 }
 
-.pop-up-header2 {
+.pop-up-header2, .pop-up-header3 {
   background-color: #85754d;
   color: white;
 }
@@ -214,18 +214,6 @@ a {
   background-color: #4d307f;
   padding: 20px;
   text-align: center;
-}
-
-#overlay, #overlay2 {
-  position: fixed;
-  opacity: 0;
-  transition: 200ms ease-in-out;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  pointer-events: none;
 }
 
 .error {
@@ -351,9 +339,49 @@ a {
   cursor: pointer;
 }
 
-#overlay.active, #overlay2.active {
+.pop-up-body-enroll {
+  background-color: #4d307f;
+  padding: 20px;
+}
+
+.enrolled-content {
+  border: none;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+  background-color: #ffffff;
+  border-radius: 30px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.tCode-title {
+  margin-top: 20px;
+  background-color: #85754d;
+  text-align: center;
+  color: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.pop-up-body-enroll {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+#overlay.active, #overlay2.active, #overlay3.active {
   opacity: 1;
   pointer-events: all;
+}
+
+#overlay, #overlay2, #overlay3 {
+  position: fixed;
+  opacity: 0;
+  transition: 200ms ease-in-out;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
 }
 
 .hidden {

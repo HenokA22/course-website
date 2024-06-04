@@ -19,14 +19,128 @@
     id("course-input").addEventListener("input", search);
     id("signout").addEventListener("click", signout);
     id("search-button").addEventListener("click", fetchSearchBar);
+    id("visual-schedule").addEventListener("click", openTransaction)
     load();
     checkForFilter();
+  }
+
+  function toggleEnrolledTransaction() {
+    id("pop-up-enroll").classList.toggle("active");
+    id("overlay3").classList.toggle("active");
+  }
+
+  function openTransaction() {
+    if (localStorage.length === 0) {
+      id("error-message-enroll").textContent = "You must be logged in to view your enrolled courses.";
+      id("error-message-enroll").classList.add("error");
+    } else {
+      id("error-message-enroll").textContent = "";
+      qs(".pop-up-body-enroll").innerHTML = "";
+      qs(".close-button2").addEventListener("click", toggleEnrolledTransaction);
+      fetchEnrolledCourses();
+    }
+  }
+
+  async function fetchEnrolledCourses() {
+    try {
+      let username = localStorage.key(0);
+      let result = await fetch("/previousTransactions?username=" + username);
+      if (result.status === 400) {
+        id("error-message-enroll").textContent = "You have not enrolled in any courses.";
+        id("error-message-enroll").classList.add("error");
+      } else {
+        toggleEnrolledTransaction();
+        let data = await result.json();
+        console.log(data);
+        let enroll = qs(".pop-up-body-enroll");
+        let userTransactionCodes = Object.keys(data);
+        console.log("All of your key: " + userTransactionCodes);
+        let DOMarr = [];
+        for (let i = 0; i < userTransactionCodes.length; i++) {
+          let currTCode = userTransactionCodes[i];
+          console.log("Your key: " + currTCode);
+          // array of keys
+          let obj = {};
+          obj[currTCode] = [];
+          for (let j = 0; j < data[currTCode].length; j++) {
+            let currObj = data[currTCode][j];
+            let currCourseDOM = constructEnrolledCourses(currObj);
+            obj[currTCode].unshift(currCourseDOM);
+          }
+          DOMarr.unshift(obj);
+        }
+        for (let i = 0; i < DOMarr.length ; i++) {
+          let currentObj = DOMarr[i];
+          let currentTCode = Object.keys(currentObj)[0];
+          let currDOMs = currentObj[currentTCode];
+
+          let tCode = document.createElement("p");
+          tCode.textContent = currentTCode;
+          tCode.classList.add("enrolled-content");
+          tCode.classList.add("tCode-title");
+          enroll.appendChild(tCode);
+          for (let j = 0; j < currDOMs.length ;j++) {
+            let currDOM = currDOMs[j];
+            enroll.appendChild(currDOM);
+          }
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+
+  // sending data like 'CSE 121': [date, availableSeats, subject, description]
+  function constructEnrolledCourses(data) {
+    let key = Object.keys(data)[0];
+    let mainBody = document.createElement("article");
+    mainBody.classList.add("enrolled-content");
+
+    let courseName = document.createElement("h2");
+    courseName.textContent = key;
+
+    let courseDescription = document.createElement("p");
+    courseDescription.textContent = "Description: " + data[key].description;
+
+    let courseSubject = document.createElement("p");
+    courseSubject.textContent = "Subject: " + data[key].subject;
+
+    let courseDate = document.createElement("p");
+    courseDate.textContent = "Days: " + data[key].date.split(/\s{2}/)[0]
+                             + " | Time: " + data[key].date.split(/\s{2}/)[1];
+
+    let courseSeats = document.createElement("p");
+    courseSeats.textContent = "Available Seats: " + data[key].availableSeats;
+
+    let courseCredits = document.createElement("p");
+    courseCredits.textContent = "Credits: " + data[key].credits;
+
+    mainBody.appendChild(courseName);
+    mainBody.appendChild(courseDescription);
+    mainBody.appendChild(courseSubject);
+    mainBody.appendChild(courseDate);
+    mainBody.appendChild(courseSeats);
+    mainBody.appendChild(courseCredits);
+
+    return mainBody;
   }
 
   async function fetchSearchBar() {
     try {
       let searchTerm = id("course-input").value.trim();
-      console.log("Here is your search: " + searchTerm);
+      let result = await fetch("/search" + "?className=" + searchTerm);
+      await statusCheck(result);
+      let data = await result.json();
+      let classList = id("classes");
+      classList.innerHTML = '';
+      for (let i = 0; i < data.classes.length; i++) {
+        let currObj = data.classes[i];
+        let currCourseDOM = constructCourse(currObj);
+        currCourseDOM.addEventListener('click', openCourse);
+        classList.appendChild(currCourseDOM);
+      }
+
     } catch (err) {
       console.log(err);
     }
@@ -85,27 +199,24 @@
   async function fetchSearch(buildQuery) {
     try {
       let result = await fetch("/search?" + buildQuery);
-      await statusCheck(result);
+      let classList = id("classes");
       if (result.status === 200) {
         let data = await result.json();
         // check if the response back is a empty array if so we need to display
         // there are no class for the specified filters.
-        let classList = id("classes");
-        if (data.classes.length === 0) {
-          classList.innerHTML = '';
-          let noClass = document.createElement("h2");
-          noClass.textContent = "No classes found for the specified filters/search.";
-          noClass.classList.add('error');
-          classList.appendChild(noClass);
-        } else {
-          classList.innerHTML = '';
-          for (let i = 0; i < data.classes.length; i++) {
-            let currObj = data.classes[i];
-            let currCourseDOM = constructCourse(currObj);
-            currCourseDOM.addEventListener('click', openCourse);
-            classList.appendChild(currCourseDOM);
-          }
+        classList.innerHTML = '';
+        for (let i = 0; i < data.classes.length; i++) {
+          let currObj = data.classes[i];
+          let currCourseDOM = constructCourse(currObj);
+          currCourseDOM.addEventListener('click', openCourse);
+          classList.appendChild(currCourseDOM);
         }
+      } else if (result.status === 400) {
+        classList.innerHTML = '';
+        let noClass = document.createElement("h2");
+        noClass.textContent = "No classes found for the specified filters/search.";
+        noClass.classList.add('error');
+        classList.appendChild(noClass);
       }
     } catch (err) {
       console.log(err);
@@ -400,7 +511,9 @@
 
         // after two seconds close the page for the user:
         setTimeout(() =>{
-          toggleCoursePage();
+          if (id("pop-up-courses").classList.contains("active") && id("overlay2").classList.contains("active")) {
+            toggleCoursePage();
+          }
         }, 3000);
       } else {
         id("error-message-course").textContent = await response.text();
