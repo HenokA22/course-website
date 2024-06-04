@@ -25,7 +25,7 @@ app.use(express.urlencoded({extended: true}));
 app.use(express.json());
 
 // for multipart/form-data (required with FormData)
-app.use(multer().none()); 
+app.use(multer().none());
 
 /**
  *
@@ -552,6 +552,7 @@ function ApplyConditionFilterHelper(nameAndValuesForAFilter, name, query) {
  * @param {String} userName - The username of the logged in user.
  * @param {String[]} currentCourses - An array of courses that the user is currently taking
  * @param {Integer} id - An id representing the id of the course we are enrolling in
+ * @param {Object} res - response object used to send back to the client
  * @returns {String} - Represents a randomized 6 digit string code to be sent to the user.
  */
 async function helperFunction(db, className, userName, currentCourses, id, res) {
@@ -655,6 +656,7 @@ function createCode() {
  * Retrieves information about each course the student is currently taking.
  * @param {Object} db - The SQLite database connection.
  * @param {String[]} currentCourses - Array containing names of current courses.
+ * @param {Object} res - response object used to send back to the client
  * @returns {Promise<Array>} - A Promise that resolves to an array of objects,
  * where each object contains information about a course.
  */
@@ -688,6 +690,7 @@ async function getStudentClassesInfo(db, currentCourses, res) {
  * @param {sqlite3.Database} db - The database object for the connection
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
  * @param {String[]} currentCourses - An array of courses that the user is current taking
+ * @param {Object} res - response object used to send back to the client
  * @return - A boolean representing if a conflict does indeed occur, true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
@@ -729,6 +732,7 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
  * @param {String} toBeEnrolledCourseDate - The dates that the request enrolled date
  *                                      lies on.
  * @param {String} currentCourse - A course that the logged in user is taking
+ * @param {Object} res - response object used to send back to the client
  * @returns An array of santatized day and time information for both class the user is taking and
  *          request classes
  */
