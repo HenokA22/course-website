@@ -285,13 +285,13 @@ async function checkConflictHelper(
   res
 ) {
   // Check all the dates of each class
-  let conflictInScheduleResult = await checkConflict
-  (
+  let conflictInScheduleResult = await checkConflict(
     db,
     toBeEnrolledCourseDate,
     currentCourses,
     res
   );
+
   /**
    * No over lap takes place therefore the following code function is to add a
    * course to users schedule
@@ -332,7 +332,7 @@ app.get("/search", async function(req, res) {
   let date = req.query.date; // Checkbox on the front end: M W F in an array as a string ["M", "W"]
   let subject = req.query.subject; // an array of subjects as an string (e.g ["Computer Science"])
   let credits = req.query.credits; // an array of credits as a string (e.g [5])
-  let courseLevel = req.query.courseLevel // An array course level on the front end as a string
+  let courseLevel = req.query.courseLevel; // An array course level on the front end as a string
   let query = "";
   let classQueryUsed = false;
 
@@ -362,7 +362,7 @@ app.get("/search", async function(req, res) {
 });
 
 /**
- *
+ * Used to help construct the search endpoint. It returns whether or not we have a matching query.
  * @param {String} className - The name of the class short name the user wants to enroll in
  * @param {Boolean} classQueryUsed - Boolean representing if the classQuery was used
  * @param {String} query - empty query used to store the resultant query from createQuery
@@ -381,13 +381,13 @@ async function constructSearchQueryHelper(className, classQueryUsed, query, vali
      * Ternary operator is used to distingush whether or not the a search term was used in the
      * search bar.
      */
-    let result = classQueryUsed ? await db.all(query, `%${className}%`) : await db.all(query);
+    let result2 = classQueryUsed ? await db.all(query, `%${className}%`) : await db.all(query);
 
     // Empty array (query) represents no matching classes
-    if (result.length === 0) {
+    if (result2.length === 0) {
       throw new Error("No matching results");
     }
-    let matchingSearchClasses = {"classes": result};
+    let matchingSearchClasses = {"classes": result2};
     await closeDbConnection(db);
     res.json(matchingSearchClasses);
   } catch (error) {
@@ -408,12 +408,12 @@ app.get("/previousTransactions", async function(req, res) {
 
   // Checking the login status
   let query = "SELECT loginStatus FROM login WHERE username = ?;";
+
   // have a way to denote whether or not the user is signed in.
   try {
-    sendTransactionHelper(username, query, res);
+    await sendTransactionHelper(username, query, res);
   } catch (error) {
     // an error occured with one of the queries here
-    // Change this later
     handleError(res, error);
   }
 });
@@ -429,6 +429,7 @@ async function sendTransactionHelper(username, query, res) {
     let db = await getDBConnection();
     let result = await db.get(query, username);
     await closeDbConnection(db);
+
     // Extracting the text (true / false)
     let isUserLogin = result.loginStatus;
     if (isUserLogin === "true") {
@@ -440,12 +441,13 @@ async function sendTransactionHelper(username, query, res) {
           .send("No course history for this user");
       } else {
         let userPastSchedules = courseHistory[username];
+
         // Sending back all users past -- "transactions" -- course information
         res.json(userPastSchedules);
       }
     } else {
       res.type("text").status(USER_ERROR_CODE)
-          .send("You are not logged in. Please sign in");
+        .send("You are not logged in. Please sign in");
     }
   }
 }
@@ -458,25 +460,26 @@ async function sendTransactionHelper(username, query, res) {
  * @param {String} query - An string representing a empty query
  * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
  * @param {Object} res - response object used to send back to the client
- * @returns - A array containing a newly assembled Query along with whether or not a term is used
+ * @returns {Object} - A array containing a newly assembled Query along with whether or not a term is used
  *            in the search term. The latter is represented by a boolean.
  */
 async function createQuery(className, classQueryUsed, query, validFilters, res) {
   let searchBarNotEmpty = classQueryUsed;
   let isPartial = await determinePartialSearch(className, res);
 
-  if(isPartial && className !== undefined) {
+  if (isPartial && className !== undefined) {
     searchBarNotEmpty = true;
+
     // Always use shortName
     query += "SELECT * FROM classes WHERE (shortName LIKE ?";
     query = applyFiltersToQuery(query, validFilters);
-  } else if(className) {
+  } else if (className) {
     searchBarNotEmpty = true;
 
     // Regular expression used to match any digit
     const regex = /\d/;
 
-    query = helperCreateQuery(regex, query);
+    query = helperCreateQuery(regex, query, className, validFilters);
   } else {
 
     // reconstruct query based off data
@@ -490,11 +493,13 @@ async function createQuery(className, classQueryUsed, query, validFilters, res) 
  * Helper method used to break down createQuery
  * @param {String} regex - regular expressed used to match any digit
  * @param {String} query - current query used in createQuery
+ * @param {String} className - name of the class
+ * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
  * @return {String} - returning back the string query after modification
  */
-function helperCreateQuery(regex, query) {
+function helperCreateQuery(regex, query, className, validFilters) {
   // Test to see if search term is a short name or full name of a class
-  if(regex.test(className)) {
+  if (regex.test(className)) {
     // Search used shortname
     query += "SELECT * FROM classes WHERE (shortName LIKE ?";
     query = applyFiltersToQuery(query, validFilters);
@@ -511,7 +516,7 @@ function helperCreateQuery(regex, query) {
  * Determines whether or not a search input is incomplete
  * @param {String} className - The search term used in the search bar
  * @param {Object} res - response object used to send back to the client
- * @returns - A boolean that returns false if search input contains a complete short name or regular
+ * @returns {Boolean} - A boolean that returns false if search input contains a complete short name or regular
  *            name. Vice versa true if the input is incomplete
  */
 async function determinePartialSearch(className, res) {
@@ -524,7 +529,11 @@ async function determinePartialSearch(className, res) {
     let shortNameResult = await db.get(shortNameQuery, className);
 
     // If both are not queries not success then
-    returnBool = (fullNameResult === undefined && shortNameResult === undefined) ? true : false;
+    if (fullNameResult === undefined && shortNameResult === undefined) {
+      returnBool = true;
+    } else {
+      returnBool = false;
+    }
   } catch (error) {
     handleError(res, error);
   }
