@@ -837,7 +837,7 @@
         id("login").classList.remove("hidden");
         id("display-login").classList.remove("hidden");
         id("signout").classList.add("hidden");
-        id("displayUser").classList.add("hidden");
+        id("display-user").classList.add("hidden");
       }
     } catch (error) {
       handleErr(error);
@@ -851,7 +851,7 @@
   async function loginOfficial() {
     let username = id("username").value.trim();
     let password = id("password").value.trim();
-    let savePass = id("saveName");
+    let savePass = id("save-name");
     if (username !== '' && password !== '') {
       try {
         let params = new FormData();
@@ -906,8 +906,8 @@
       id("login").classList.add("hidden");
       id("display-login").classList.add("hidden");
       id("signout").classList.remove("hidden");
-      id("displayUser").textContent = "Welcome, " + username;
-      id("displayUser").classList.remove("hidden");
+      id("display-user").textContent = "Welcome, " + username;
+      id("display-user").classList.remove("hidden");
       id("error-message-enroll").textContent = "";
       let localStorageData = [password, saveUser];
       window.localStorage.setItem(username, JSON.stringify(localStorageData));

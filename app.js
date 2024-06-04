@@ -205,7 +205,7 @@ app.post("/enrollCourse", async function(req, res) {
  */
 async function checkLoginStatus(isUserLogin, className, classId, userName, db, res) {
   if (isUserLogin === "true") {
-    let arr = helpBreakDownLogin(db, className, classId, res);
+    let arr = await helpBreakDownLogin(db, className, classId, res);
     let totalSeatsVal = arr[0];
     let toBeEnrolledCourseDate = arr[1];
     if (totalSeatsVal > 0) {
