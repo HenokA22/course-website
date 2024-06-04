@@ -664,6 +664,7 @@
       id("error-message-course").classList.add("error");
       return false;
     }
+
     // check if user did not select more than 1.
     let checkedBox = qsa('.enrollBox');
     let countChecked = 0;
@@ -859,15 +860,7 @@
           params.append("savePassWord", true);
           saveUser = true;
         }
-        let result = await fetch("/login", {method: "POST", body: params});
-        if (result.status === USER_ERROR_CODE) {
-          // bad request from user.
-          id("error-message").textContent = "Invalid username or password";
-          id("error-message").classList.add("error");
-        } else {
-          await statusCheck(result);
-          loginOfficialHelper(result, username, password, saveUser);
-        }
+        helperLoginOfficial(result);
       } catch (err) {
         handleErr(err);
       }
@@ -878,6 +871,21 @@
     }
   }
 
+  /**
+   * Method used to break down the login function into two helper functions.
+   * if the resultant fetch was good, call loginOfficialHelper.
+   * @param {Object} result - result from the fetch request
+   */
+  async function helperLoginOfficial(result) {
+    if (result.status === USER_ERROR_CODE) {
+      // bad request from user.
+      id("error-message").textContent = "Invalid username or password";
+      id("error-message").classList.add("error");
+    } else {
+      await statusCheck(result);
+      loginOfficialHelper(result, username, password, saveUser);
+    }
+  }
   /**
    * Helper function that helps with the login function.
    * @param {Object} result - result from the fetch request
