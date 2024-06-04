@@ -212,8 +212,14 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
         let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
         let currentCourses = await db.all(query3, userName);
 
-        await checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses,
-                                 className, userName, classId, res);
+        await checkConflictHelper(
+          db,
+          toBeEnrolledCourseDate,
+          currentCourses,
+          className,
+          userName,
+          classId,
+          res);
       } else {
         res.type("text").status(USER_ERROR_CODE)
           .send("This course is add capacity. Cannot enroll");
@@ -238,8 +244,14 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
  * @param {Integer} classId - The id of the class the user wants to enroll in
  * @param {Object} res - response object used to send back to the client
  */
-async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses,
-                                  className, userName, classId, res) {
+async function checkConflictHelper(
+  db,
+  toBeEnrolledCourseDate,
+  currentCourses,
+  className,
+  userName,
+  classId,
+  res) {
   // Check all the dates of each class
   let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate,
                                                     currentCourses, res);
