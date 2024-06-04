@@ -836,7 +836,7 @@
         id("error-message-enroll").textContent = "";
         id("login").classList.remove("hidden");
         id("display-login").classList.remove("hidden");
-        id("signout").classList.add("hidden");
+        id("signout").style.visibility = "hidden";
         id("display-user").classList.add("hidden");
       }
     } catch (error) {
