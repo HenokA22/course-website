@@ -206,24 +206,14 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
       let totalSeatsVal = classInfo.availableSeats;
       let toBeEnrolledCourseDate = classInfo.date;
 
-      // Checking if space availability is valid
-      if (totalSeatsVal > 0) {
-
-        let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
-        let currentCourses = await db.all(query3, userName);
-
-        await checkConflictHelper(
-          db,
-          toBeEnrolledCourseDate,
-          currentCourses,
-          className,
-          userName,
-          classId,
-          res);
-      } else {
-        res.type("text").status(USER_ERROR_CODE)
-          .send("This course is add capacity. Cannot enroll");
-      }
+      checkLoginStatusHelper(
+        totalSeatsVal,
+        db,
+        toBeEnrolledCourseDate,
+        className,
+        userName,
+        classId,
+        res);
     } else {
       res.type("text").status(USER_ERROR_CODE)
         .send("This class does not exist");
@@ -231,6 +221,44 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
   } else {
     res.type("text").status(USER_ERROR_CODE)
       .send("You are not logged in. Please sign in");
+  }
+}
+
+/**
+ *
+ * @param {Integer} totalSeatsVal - Integer representing the total seats left
+ * @param {Object} db - The SQLite database connection.
+ * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
+ * @param {String} className - The name of the class short name the user wants to enroll in
+ * @param {String} userName - The username of the logged in user
+ * @param {Integer} classId - The id of the class the user wants to enroll in
+ * @param {Object} res - response object used to send back to the client
+ */
+async function checkLoginStatusHelper(
+  totalSeatsVal,
+  db,
+  toBeEnrolledCourseDate,
+  className,
+  userName,
+  classId,
+  res) {
+  // Checking if space availability is valid
+  if (totalSeatsVal > 0) {
+
+    let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
+    let currentCourses = await db.all(query3, userName);
+
+    await checkConflictHelper(
+      db,
+      toBeEnrolledCourseDate,
+      currentCourses,
+      className,
+      userName,
+      classId,
+      res);
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("This course is add capacity. Cannot enroll");
   }
 }
 
