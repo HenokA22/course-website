@@ -289,7 +289,6 @@ async function checkConflictHelper(
     db,
     toBeEnrolledCourseDate,
     currentCourses,
-    res
   );
 
   /**
@@ -309,7 +308,7 @@ async function checkConflictHelper(
 
     // Passed all conditions therefore updating the database is being represented below
     if (addingAnNewClass) {
-      let newCode = await helperFunction(db, className, userName, currentCourses, classId, res);
+      let newCode = await helperFunction(db, className, userName, currentCourses, classId);
 
       res.type("text").status(SUCCESS_CODE)
         .send("Successfully added course, this is the confirmation code: " + newCode);
@@ -371,7 +370,7 @@ app.get("/search", async function(req, res) {
  */
 async function constructSearchQueryHelper(className, classQueryUsed, query, validFilters, res) {
   // Valid Filters after completions should be ["date", "M", "F"] for example
-  let result = await createQuery(className, classQueryUsed, query, validFilters, res);
+  let result = await createQuery(className, classQueryUsed, query, validFilters);
   query = result[0];
   classQueryUsed = result[1];
   try {
@@ -411,10 +410,10 @@ app.get("/previousTransactions", async function(req, res) {
 
   // have a way to denote whether or not the user is signed in.
   try {
-    await sendTransactionHelper(username, query, res);
+    await sendTransactionHelper(username, query);
   } catch (error) {
     // an error occured with one of the queries here
-    handleError(res, error);
+    handleError(error);
   }
 });
 
@@ -459,14 +458,13 @@ async function sendTransactionHelper(username, query, res) {
  *                                    a value
  * @param {String} query - An string representing a empty query
  * @param {Object} validFilters - A 2D array containing information about which filters to apply
- * @param {Object} res - response object used to send back to the client
  * @returns {Object} - A array containing a newly assembled Query along with
  *                     whether or not a term is used in the search term. The latter is represented
  *                     by a boolean.
  */
-async function createQuery(className, classQueryUsed, query, validFilters, res) {
+async function createQuery(className, classQueryUsed, query, validFilters) {
   let searchBarNotEmpty = classQueryUsed;
-  let isPartial = await determinePartialSearch(className, res);
+  let isPartial = await determinePartialSearch(className);
 
   if (isPartial && className !== undefined) {
     searchBarNotEmpty = true;
@@ -516,12 +514,11 @@ function helperCreateQuery(regex, query, className, validFilters) {
 /**
  * Determines whether or not a search input is incomplete
  * @param {String} className - The search term used in the search bar
- * @param {Object} res - response object used to send back to the client
  * @returns {Boolean} - A boolean that returns false if search input contains a
  *                      complete short name or regular name. Vice versa true if
  *                      the input is incomplete
  */
-async function determinePartialSearch(className, res) {
+async function determinePartialSearch(className) {
   let db = await getDBConnection();
   let fullNameQuery = "SELECT name FROM classes WHERE name = ? GROUP BY name";
   let shortNameQuery = "SELECT shortName FROM classes WHERE shortName = ? GROUP BY shortName";
@@ -537,7 +534,7 @@ async function determinePartialSearch(className, res) {
       returnBool = false;
     }
   } catch (error) {
-    handleError(res, error);
+    handleError(error);
   }
   await closeDbConnection(db);
   return returnBool;
@@ -621,10 +618,9 @@ function applyConditionFilterHelper(nameAndValuesForAFilter, name, query) {
  * @param {String} userName - The username of the logged in user.
  * @param {String[]} currentCourses - An array of courses that the user is currently taking
  * @param {Integer} id - An id representing the id of the course we are enrolling in
- * @param {Object} res - response object used to send back to the client
  * @returns {String} - Represents a randomized 6 digit string code to be sent to the user.
  */
-async function helperFunction(db, className, userName, currentCourses, id, res) {
+async function helperFunction(db, className, userName, currentCourses, id) {
   try {
     // Updating the database available seat count now
     let updateSeatCount = "UPDATE classes SET availableSeats = availableSeats - 1" +
@@ -649,14 +645,14 @@ async function helperFunction(db, className, userName, currentCourses, id, res) 
      * Then applying then assembling that into a larger array that represents what the
      * student is currently taking.
      */
-    let studentClasses = await getStudentClassesInfo(db, currentCourses, res);
+    let studentClasses = await getStudentClassesInfo(db, currentCourses);
 
     helperConstructCourseHistory(newCode, studentClasses, userName);
 
     await closeDbConnection(db);
     return newCode;
   } catch (error) {
-    handleError(res, error);
+    handleError(error);
   }
 }
 
@@ -669,9 +665,9 @@ async function helperFunction(db, className, userName, currentCourses, id, res) 
  */
 function helperConstructCourseHistory(newCode, studentClasses, userName) {
   /**
-    * adding new "transaction(adding a class) to be mapped to a user up to date
-    * course schedule.
-    */
+   * adding new "transaction(adding a class) to be mapped to a user up to date
+   * course schedule.
+   */
   let newTransactionKey = newCode;
 
   // Adding user new current schedule to course history
@@ -728,11 +724,10 @@ function createCode() {
  * Retrieves information about each course the student is currently taking.
  * @param {Object} db - The SQLite database connection.
  * @param {String[]} currentCourses - Array containing names of current courses.
- * @param {Object} res - response object used to send back to the client
  * @returns {Promise<Array>} - A Promise that resolves to an array of objects,
  * where each object contains information about a course.
  */
-async function getStudentClassesInfo(db, currentCourses, res) {
+async function getStudentClassesInfo(db, currentCourses) {
   try {
     // Array to store information about each course the student is taking
     let studentClasses = [];
@@ -757,7 +752,7 @@ async function getStudentClassesInfo(db, currentCourses, res) {
 
     return studentClasses;
   } catch (error) {
-    handleError(res, error);
+    handleError(error);
   }
 }
 
@@ -766,15 +761,14 @@ async function getStudentClassesInfo(db, currentCourses, res) {
  * @param {sqlite3.Database} db - The database object for the connection
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
  * @param {String[]} currentCourses - An array of courses that the user is current taking
- * @param {Object} res - response object used to send back to the client
  * @returns {Boolean} - A boolean representing if a conflict does indeed occur,
  *                      true if so, if not false
  */
-async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
+async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
   let conflictInSchedule = false;
   try {
     for (let i = 0; i < currentCourses.length; i += 1) {
-      let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i], res);
+      let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i]);
 
       /**
        * Check each day the to be enrolled course takes places against logged in user
@@ -797,7 +791,7 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
     }
     return conflictInSchedule;
   } catch (error) {
-    handleError(res, error);
+    handleError(error);
   }
 }
 
@@ -808,11 +802,10 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses, res) {
  * @param {String} toBeEnrolledCourseDate - The dates that the request enrolled date
  *                                      lies on.
  * @param {String} currentCourse - A course that the logged in user is taking
- * @param {Object} res - response object used to send back to the client
  * @returns {Object} - An array of santatized day and time information for
  *                     both class the user is taking and request classes
  */
-async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse, res) {
+async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
   try {
 
     // Accessing the nested date value from result of .get()
@@ -840,7 +833,7 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse, res) {
     returnArr.push(currentCourseDaysSplit);
     return returnArr;
   } catch (error) {
-    handleError(res, error);
+    handleError(error);
   }
 }
 
@@ -911,11 +904,10 @@ async function closeDbConnection(db) {
 
 /**
  * Handles errors in a try-catch block and sends an error response to the client.
- * @param {Object} res - response object used to send back to the client
  * @param {Error} error - The error object.
  */
-function handleError(res, error) {
-  res.status(SERVER_ERROR_CODE).text("Internal server error: " + error);
+function handleError(error) {
+  console.error("Internal server error: " + error);
 }
 
 // tells the code to serve static files in a directory called 'public'
