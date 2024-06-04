@@ -460,8 +460,9 @@ async function sendTransactionHelper(username, query, res) {
  * @param {String} query - An string representing a empty query
  * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
  * @param {Object} res - response object used to send back to the client
- * @returns {Object} - A array containing a newly assembled Query along with whether or not a term is used
- *            in the search term. The latter is represented by a boolean.
+ * @returns {Object} - A array containing a newly assembled Query along with
+ *                     whether or not a term is used in the search term. The latter is represented
+ *                     by a boolean.
  */
 async function createQuery(className, classQueryUsed, query, validFilters, res) {
   let searchBarNotEmpty = classQueryUsed;
@@ -516,8 +517,9 @@ function helperCreateQuery(regex, query, className, validFilters) {
  * Determines whether or not a search input is incomplete
  * @param {String} className - The search term used in the search bar
  * @param {Object} res - response object used to send back to the client
- * @returns {Boolean} - A boolean that returns false if search input contains a complete short name or regular
- *            name. Vice versa true if the input is incomplete
+ * @returns {Boolean} - A boolean that returns false if search input contains a
+ *                      complete short name or regular name. Vice versa true if
+ *                      the input is incomplete
  */
 async function determinePartialSearch(className, res) {
   let db = await getDBConnection();
