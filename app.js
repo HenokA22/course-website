@@ -205,12 +205,9 @@ app.post("/enrollCourse", async function(req, res) {
  */
 async function checkLoginStatus(isUserLogin, className, classId, userName, db, res) {
   if (isUserLogin === "true") {
-    let classInfo = await getClassInfo(db, className, classId, res);
-    if (!classInfo) {
-      return;
-    }
-    let totalSeatsVal = classInfo.availableSeats;
-    let toBeEnrolledCourseDate = classInfo.date;
+    let arr = helpBreakDownLogin(db, className, classId, res);
+    let totalSeatsVal = arr[0];
+    let toBeEnrolledCourseDate = arr[1];
     if (totalSeatsVal > 0) {
       let currentCourses = await getCurrentCourses(db, userName, res);
       if (!currentCourses) {
@@ -235,6 +232,16 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
     res.type("text").status(USER_ERROR_CODE)
       .send("You are not logged in. Please sign in");
   }
+}
+
+async function helpBreakDownLogin(db, className, classId, res) {
+  let classInfo = await getClassInfo(db, className, classId, res);
+  if (!classInfo) {
+    return;
+  }
+  let totalSeatsVal = classInfo.availableSeats;
+  let toBeEnrolledCourseDate = classInfo.date;
+  return [totalSeatsVal, toBeEnrolledCourseDate];
 }
 
 /**
