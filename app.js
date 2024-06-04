@@ -206,16 +206,26 @@ app.post("/enrollCourse", async function(req, res) {
 async function checkLoginStatus(isUserLogin, className, classId, userName, db, res) {
   if (isUserLogin === "true") {
     let classInfo = await getClassInfo(db, className, classId, res);
-    if (!classInfo) return;
-
+    if (!classInfo) {
+      return;
+    }
     let totalSeatsVal = classInfo.availableSeats;
     let toBeEnrolledCourseDate = classInfo.date;
 
     if (totalSeatsVal > 0) {
       let currentCourses = await getCurrentCourses(db, userName, res);
-      if (!currentCourses) return;
+      if (!currentCourses) {
+        return;
+      }
 
-      await checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res);
+      let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
+
+      if (!conflictInScheduleResult) {
+        checkConflictHelper(db, currentCourses, className, userName, classId, res);
+      } else {
+        res.type("text").status(USER_ERROR_CODE)
+          .send("A conflict in your schedule has occured");
+      }
     } else {
       res.type("text").status(USER_ERROR_CODE)
         .send("This course is at capacity. Cannot enroll");
@@ -266,32 +276,39 @@ async function getCurrentCourses(db, userName, res) {
 /**
  * Function that is used to help check the conflict of two date times user passed.
  * @param {Object} db - The SQLite database connection.
- * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
  * @param {Object[]} currentCourses - An array of courses that the user is currently taking
  * @param {String} className - The name of the class short name the user wants to enroll in
  * @param {String} userName - The username of the logged in user
  * @param {Integer} classId - The id of the class the user wants to enroll in
  * @param {Object} res - response object used to send back to the client
  */
-async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res) {
-  let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses);
+async function checkConflictHelper(db, currentCourses, className, userName, classId, res) {
+  let addingAnNewClass = isNewClass(currentCourses, className);
 
-  if (!conflictInScheduleResult) {
-    let addingAnNewClass = isNewClass(currentCourses, className);
+  if (addingAnNewClass) {
+    let newCode = await helperFunction(db, className, userName, currentCourses, classId);
 
-    if (addingAnNewClass) {
-      let newCode = await helperFunction(db, className, userName, currentCourses, classId);
-
-      res.type("text").status(SUCCESS_CODE)
-        .send("Successfully added course, this is the confirmation code: " + newCode);
-    } else {
-      res.type("text").status(USER_ERROR_CODE)
-        .send("Cannot enroll in a class you have already enrolled.");
-    }
+    res.type("text").status(SUCCESS_CODE)
+      .send("Successfully added course, this is the confirmation code: " + newCode);
   } else {
     res.type("text").status(USER_ERROR_CODE)
-      .send("A conflict in your schedule has occured");
+      .send("Cannot enroll in a class you have already enrolled.");
   }
+}
+
+/**
+ * Function that checks if the class to be added is new
+ * @param {Object[]} currentCourses - An array of courses that the user is currently taking
+ * @param {String} className - The name of the class short name the user wants to enroll in
+ * @returns {Boolean} - True if the class is new, false otherwise
+ */
+function isNewClass(currentCourses, className) {
+  for (let i = 0; i < currentCourses.length; i += 1) {
+    if (currentCourses[i].takingCourse === className) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
