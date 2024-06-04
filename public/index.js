@@ -860,7 +860,7 @@
           params.append("savePassWord", true);
           saveUser = true;
         }
-        helperLoginOfficial(result);
+        helperLoginOfficial(result, username, password, saveUser);
       } catch (err) {
         handleErr(err);
       }
@@ -875,8 +875,11 @@
    * Method used to break down the login function into two helper functions.
    * if the resultant fetch was good, call loginOfficialHelper.
    * @param {Object} result - result from the fetch request
+   * @param {String} username - username of the user
+   * @param {String} password - password of the user
+   * @param {Boolean} saveUser - Boolean representing whether or not we shoudl save user.
    */
-  async function helperLoginOfficial(result) {
+  async function helperLoginOfficial(result, username, password, saveUser) {
     if (result.status === USER_ERROR_CODE) {
       // bad request from user.
       id("error-message").textContent = "Invalid username or password";
