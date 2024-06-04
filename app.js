@@ -213,7 +213,8 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
         className,
         userName,
         classId,
-        res);
+        res
+      );
     } else {
       res.type("text").status(USER_ERROR_CODE)
         .send("This class does not exist");
@@ -225,7 +226,7 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
 }
 
 /**
- *
+ * CheckLoginStatusHelper is purely to help break down the checkLoginStatus code
  * @param {Integer} totalSeatsVal - Integer representing the total seats left
  * @param {Object} db - The SQLite database connection.
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
@@ -241,7 +242,8 @@ async function checkLoginStatusHelper(
   className,
   userName,
   classId,
-  res) {
+  res
+) {
   // Checking if space availability is valid
   if (totalSeatsVal > 0) {
 
@@ -255,7 +257,8 @@ async function checkLoginStatusHelper(
       className,
       userName,
       classId,
-      res);
+      res
+    );
   } else {
     res.type("text").status(USER_ERROR_CODE)
       .send("This course is add capacity. Cannot enroll");
@@ -279,10 +282,16 @@ async function checkConflictHelper(
   className,
   userName,
   classId,
-  res) {
+  res
+) {
   // Check all the dates of each class
-  let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate,
-                                                    currentCourses, res);
+  let conflictInScheduleResult = await checkConflict
+  (
+    db,
+    toBeEnrolledCourseDate,
+    currentCourses,
+    res
+  );
   /**
    * No over lap takes place therefore the following code function is to add a
    * course to users schedule
