@@ -1,9 +1,11 @@
 /**
+ * Name: Jimmy Le & Henok Assalif
+ * Date: June 4th, 2024
+ * Section: CSE 154 AE Peter Oh & Kasten Welsh
+ *
  * This file contains the JavaScript code for the index page of the application.
  * It includes functions for initializing the page, handling user interactions,
  * fetching data from the server, and displaying the search results and enrolled courses.
- *
- * Created by Jimmy Le and Henok Assalif on June 3rd, 2024.
  */
 
 "use strict";

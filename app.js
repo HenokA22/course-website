@@ -1,3 +1,12 @@
+/**
+ * Name: Jimmy Le & Henok Assalif
+ * Date: June 4th, 2024
+ * Section: CSE 154 AE Peter Oh & Kasten Welsh
+ *
+ * This the app.js files structures the API used for the myplan website. Certain requests can be
+ * such as logging in a user and viewing course history.
+ */
+
 "use strict";
 
 const express = require("express");
