@@ -164,9 +164,10 @@ app.post("/enrollCourse", async function(req, res) {
   let userName = req.body.userName;
   let className = req.body.className;
   let classId = req.body.id;
-  if(userName) {
+  if (userName) {
     // Checking the login status
     let query = "SELECT loginStatus FROM login WHERE username = ?;";
+
     // have a way to denote whether or not the user is signed in.
     try {
       let db = await getDBConnection();
@@ -185,7 +186,7 @@ app.post("/enrollCourse", async function(req, res) {
 });
 
 /**
- *
+ * Function that checks the login status of the user given the params
  * @param {Boolean} isUserLogin - Boolean representing if the user is logged in or not
  * @param {String} className - name of the short name class
  * @param {Integer} classId - id of the short name class
@@ -194,24 +195,25 @@ app.post("/enrollCourse", async function(req, res) {
  * @param {Object} res - response object used to send back to the client
  */
 async function checkLoginStatus(isUserLogin, className, classId, userName, db, res) {
-  if(isUserLogin === "true") {
+  if (isUserLogin === "true") {
 
     // Note that classname is guranteed to be filled as client picks a class to make a request
     let query2 = "SELECT * FROM classes WHERE shortName = ? AND id = ?;";
     let classInfo = await db.get(query2, [className, classId]);
-    if(classInfo !== undefined) {
+    if (classInfo !== undefined) {
 
       // The class does exist so now check its capacity, the date is grabbed to be used later
       let totalSeatsVal = classInfo.availableSeats;
       let toBeEnrolledCourseDate = classInfo.date;
 
       // Checking if space availability is valid
-      if(totalSeatsVal > 0) {
+      if (totalSeatsVal > 0) {
 
         let query3 = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
         let currentCourses = await db.all(query3, userName);
 
-        await checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res);
+        await checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses,
+                                 className, userName, classId, res);
       } else {
         res.type("text").status(USER_ERROR_CODE)
           .send("This course is add capacity. Cannot enroll");
@@ -227,7 +229,7 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
 }
 
 /**
- *
+ * Function that is used to help check the conflict of two date times user passed.
  * @param {Object} db - The SQLite database connection.
  * @param {String} toBeEnrolledCourseDate - The date that the request enrolled class lies on.
  * @param {Object} currentCourses - An array of courses that the user is currently taking
@@ -236,11 +238,15 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
  * @param {Integer} classId - The id of the class the user wants to enroll in
  * @param {Object} res - response object used to send back to the client
  */
-async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, className, userName, classId, res) {
+async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses,
+                                  className, userName, classId, res) {
   // Check all the dates of each class
-  let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate, currentCourses, res);
-
-  //  No over lap takes place therefore the following code function is to add a course to users schedule
+  let conflictInScheduleResult = await checkConflict(db, toBeEnrolledCourseDate,
+                                                    currentCourses, res);
+  /**
+   * No over lap takes place therefore the following code function is to add a
+   * course to users schedule
+   */
   if (!conflictInScheduleResult) {
     let addingAnNewClass = true;
     for (let i = 0; i < currentCourses.length; i += 1) {
@@ -257,7 +263,7 @@ async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, c
       let newCode = await helperFunction(db, className, userName, currentCourses, classId, res);
 
       res.type("text").status(SUCCESS_CODE)
-      .send("Successfully added course, this is the confirmation code: " + newCode);
+        .send("Successfully added course, this is the confirmation code: " + newCode);
     } else {
       res.type("text").status(USER_ERROR_CODE)
         .send("Cannot enroll in a class you have already enrolled.");
@@ -268,8 +274,10 @@ async function checkConflictHelper(db, toBeEnrolledCourseDate, currentCourses, c
   }
 }
 
-// Performs a search on the data base for classes that match the search term and filters.
-// ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
+/**
+ * Performs a search on the data base for classes that match the search term and filters.
+ * ?className=x,date=x,subject=x,credits=x,courseLevel=x (Format of query parameters)
+ */
 app.get("/search", async function(req, res) {
   let className = req.query.className;
   let date = req.query.date; // Checkbox on the front end: M W F in an array as a string ["M", "W"]
@@ -301,7 +309,7 @@ app.get("/search", async function(req, res) {
     }
   }
 
-  constructSearchQueryHelper(className, classQueryUsed, query, validFilters, res);
+  await constructSearchQueryHelper(className, classQueryUsed, query, validFilters, res);
 });
 
 /**
@@ -314,7 +322,7 @@ app.get("/search", async function(req, res) {
  */
 async function constructSearchQueryHelper(className, classQueryUsed, query, validFilters, res) {
   // Valid Filters after completions should be ["date", "M", "F"] for example
-  let result = await createQuery(className, classQueryUsed, query, validFilters);
+  let result = await createQuery(className, classQueryUsed, query, validFilters, res);
   query = result[0];
   classQueryUsed = result[1];
   try {
@@ -357,7 +365,7 @@ app.get("/previousTransactions", async function(req, res) {
   } catch (error) {
     // an error occured with one of the queries here
     // Change this later
-    console.log(error);
+    handleError(res, error);
   }
 });
 
@@ -400,12 +408,13 @@ async function sendTransactionHelper(username, query, res) {
  *                                    a value
  * @param {String} query - An string representing a empty query
  * @param {String[][]} validFilters - A 2D array containing information about which filters to apply
+ * @param {Object} res - response object used to send back to the client
  * @returns - A array containing a newly assembled Query along with whether or not a term is used
  *            in the search term. The latter is represented by a boolean.
  */
-async function createQuery(className, classQueryUsed, query, validFilters) {
+async function createQuery(className, classQueryUsed, query, validFilters, res) {
   let searchBarNotEmpty = classQueryUsed;
-  let isPartial = await determinePartialSearch(className);
+  let isPartial = await determinePartialSearch(className, res);
 
   if(isPartial && className !== undefined) {
     searchBarNotEmpty = true;
@@ -452,10 +461,11 @@ function helperCreateQuery(regex, query) {
 /**
  * Determines whether or not a search input is incomplete
  * @param {String} className - The search term used in the search bar
+ * @param {Object} res - response object used to send back to the client
  * @returns - A boolean that returns false if search input contains a complete short name or regular
  *            name. Vice versa true if the input is incomplete
  */
-async function determinePartialSearch(className) {
+async function determinePartialSearch(className, res) {
   let db = await getDBConnection();
   let fullNameQuery = "SELECT name FROM classes WHERE name = ? GROUP BY name";
   let shortNameQuery = "SELECT shortName FROM classes WHERE shortName = ? GROUP BY shortName";
@@ -467,7 +477,7 @@ async function determinePartialSearch(className) {
     // If both are not queries not success then
     returnBool = (fullNameResult === undefined && shortNameResult === undefined) ? true : false;
   } catch (error) {
-    console.error("Error:", error.message);
+    handleError(res, error);
   }
   await closeDbConnection(db);
   return returnBool;
