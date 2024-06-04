@@ -234,6 +234,14 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
   }
 }
 
+/**
+ * helpBreakDownLogin is soley used to reduce linters
+ * @param {Object} db - SQLite database connection
+ * @param {String} className - name of the short name class
+ * @param {Integer} classId - id of the short name class
+ * @param {Object} res - response object used to send back to the client
+ * @returns {Object} - array representing totalSeatsVal & toBeEnrolledCourseDate
+ */
 async function helpBreakDownLogin(db, className, classId, res) {
   let classInfo = await getClassInfo(db, className, classId, res);
   if (!classInfo) {
