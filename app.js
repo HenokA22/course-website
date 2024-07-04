@@ -18,6 +18,9 @@ const SUCCESS_CODE = 200;
 const SERVER_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
 const DEFAULT_PORT = 8000;
+const RANGE = 6;
+const MAX_ASCII = 126;
+const MIN_ASCII = 33;
 let confirmationCodes = new Set();
 
 /**
@@ -695,9 +698,6 @@ function helperConstructCourseHistory(newCode, studentClasses, userName) {
     courseHistory[userName][newTransactionKey] = studentClasses;
   }
 }
-const RANGE = 6;
-const MAX_ASCII = 126;
-const MIN_ASCII = 33;
 
 /**
  * Creates a random 6 digits code to distigush a new class enrollement for a student
