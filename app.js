@@ -14,6 +14,8 @@ const app = express();
 const multer = require("multer");
 const sqlite = require("sqlite");
 const sqlite3 = require("sqlite3");
+const fs = require('fs').promises;
+
 const SUCCESS_CODE = 200;
 const SERVER_ERROR_CODE = 500;
 const USER_ERROR_CODE = 400;
@@ -28,7 +30,7 @@ let confirmationCodes = new Set();
  * a users current courses
  *
  */
-let courseHistory = {};
+
 
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true}));
@@ -171,7 +173,6 @@ app.get("/itemDetails/:className", async function(req, res) {
 
 // Feature #4 Determines if a logged in user can enroll in a course
 app.post("/enrollCourse", async function(req, res) {
-
   // These are the two parameters to the form body object
   let userName = req.body.userName;
   let className = req.body.className;
@@ -441,20 +442,29 @@ async function sendTransactionHelper(username, query, res) {
 
     // Extracting the text (true / false)
     let isUserLogin = result.loginStatus;
-    if (isUserLogin === "true") {
-      /**
+
+    /**
        * Get all schedules of courses for this user
        */
+    let data = await fs.readFile("courseHistory.json", "utf8");
+    let courseHistory = JSON.parse(data);
+    if (isUserLogin === "true") {
+      /**
+       * Send back all the course history for this user as a JSON object
+       */
       if (Object.keys(courseHistory).length === 0) {
+        await fs.writeFile("courseHistory.json", JSON.stringify(courseHistory));
         res.type("text").status(USER_ERROR_CODE)
           .send("No course history for this user");
       } else {
         let userPastSchedules = courseHistory[username];
+        await fs.writeFile("courseHistory.json", JSON.stringify(courseHistory));
 
         // Sending back all users past -- "transactions" -- course information
         res.json(userPastSchedules);
       }
     } else {
+      await fs.writeFile("courseHistory.json", JSON.stringify(courseHistory));
       res.type("text").status(USER_ERROR_CODE)
         .send("You are not logged in. Please sign in");
     }
@@ -673,12 +683,14 @@ async function helperFunction(db, className, userName, currentCourses, id) {
  * @param {Object} studentClasses - array representing the curring classes user is enrolled in
  * @param {*} userName - name of the user who is logged in.
  */
-function helperConstructCourseHistory(newCode, studentClasses, userName) {
+async function helperConstructCourseHistory(newCode, studentClasses, userName) {
   /**
    * adding new "transaction(adding a class) to be mapped to a user up to date
    * course schedule.
    */
   let newTransactionKey = newCode;
+  let data = await fs.readFile("courseHistory.json", "utf8");
+  let courseHistory = JSON.parse(data);
 
   // Adding user new current schedule to course history
   let keys = Object.keys(courseHistory);
@@ -697,6 +709,7 @@ function helperConstructCourseHistory(newCode, studentClasses, userName) {
     courseHistory[userName] = {};
     courseHistory[userName][newTransactionKey] = studentClasses;
   }
+  await fs.writeFile("courseHistory.json", JSON.stringify(courseHistory));
 }
 
 /**
@@ -772,11 +785,12 @@ async function getStudentClassesInfo(db, currentCourses) {
  *                      true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
+  console.log(toBeEnrolledCourseDate);
+  console.log(currentCourses);
   let conflictInSchedule = false;
   try {
     for (let i = 0; i < currentCourses.length; i += 1) {
       let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i]);
-
       /**
        * Check each day the to be enrolled course takes places against logged in user
        * current course days
@@ -788,7 +802,6 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
           // Checking if two times on the same day overlap
           conflictInSchedule = timesOverlap(santizedInfo[0], santizedInfo[1]);
           if (conflictInSchedule) {
-
             // Exit both loops since conflict has been found
             i = currentCourses.length;
             j = santizedInfo[2].length;
@@ -846,42 +859,33 @@ async function parsingOutDates(db, toBeEnrolledCourseDate, currentCourse) {
 
 /**
  * Checks if two time ranges overlap.
- * @param {string} range1 - The first time range in the format "x:xx-x:xx am/pm".
- * @param {string} range2 - The second time range in the format "x:xx-x:xx am/pm".
+ * @param {string} range1 - The first time range in the format "HH:mm-HH:mm".
+ * @param {string} range2 - The second time range in the format "HH:mm-HH:mm".
  * @returns {boolean} - True if the time ranges overlap, false otherwise.
  */
 function timesOverlap(range1, range2) {
+  // Split the time ranges into start and end times
   let time1Arr = range1.split("-");
   let time2Arr = range2.split("-");
 
-  let range1StartTime = time1Arr[0];
-  let range1EndTime = time1Arr[1];
+  let range1StartTime = convertToMinutes(time1Arr[0]);
+  let range1EndTime = convertToMinutes(time1Arr[1]);
 
-  let range2StartTime = time2Arr[0];
-  let range2EndTime = time2Arr[1];
+  let range2StartTime = convertToMinutes(time2Arr[0]);
+  let range2EndTime = convertToMinutes(time2Arr[1]);
 
-  // sort the star tand end times into a single array
-  let allTimes = [
-    [range1StartTime, range1EndTime],
-    [range2StartTime, range2EndTime]
-  ].sort((range1a, range2b) => {
-    let [aStartHour, aStartMinute] = range1a[0].split(":").map(Number);
-    let [bStartHour, bStartMinute] = range2b[0].split(":").map(Number);
+  // Check if the time ranges overlap
+  return (range1StartTime < range2EndTime) && (range2StartTime < range1EndTime);
+}
 
-    if (aStartHour === bStartHour) {
-
-      // if the hours are equal compare the minutes
-      return aStartMinute - bStartMinute;
-    }
-    return aStartHour - bStartHour;
-  });
-
-  /**
-   * check if the end time of the irst range is greater than the
-   * start time of the second range. If so we know there is a overlap.
-   */
-  let isOverlap = allTimes[1][0] < allTimes[0][1];
-  return isOverlap;
+/**
+ * Converts a time in "HH:mm" format to minutes since midnight.
+ * @param {string} time - The time string to convert.
+ * @returns {number} - The number of minutes since midnight.
+ */
+function convertToMinutes(time) {
+  let [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 /**
@@ -921,3 +925,17 @@ function handleError(error) {
 app.use(express.static('public'));
 const PORT = process.env.PORT || DEFAULT_PORT;
 app.listen(PORT);
+
+/**
+ * To - dos:
+ *
+ * 1.) In order to store changes that occur after a website has been closed, we need to change
+ * the courseHistory object to a database. This will allow us to store the changes that occur after
+ * the website has been closed.(Done)
+ *
+ * 2.) Debug the class enrollment feature. (Later time)
+ *
+ * 3.) Think about how to access the most recent users schedule.
+ *
+ * 4.) Design and research how to make visual schedule for the user.
+ */
