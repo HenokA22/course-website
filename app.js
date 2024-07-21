@@ -71,6 +71,33 @@ app.get("/getItems", async function(req, res) {
   }
 });
 
+
+/** Retrives the most recent users schedules with course information */
+app.get("/getSchedule/:userName", async function(req, res) {
+  let userName = req.params.userName;
+  let query = "SELECT scheduleCode FROM login WHERE username = ?;";
+  try {
+    // Qurerying the database for the schedule code
+    let db = await getDBConnection();
+    let result = await db.get(query, userName);
+    let scheduleCodeR = result.scheduleCode;
+
+    // Reading the course history file for the user most recent schedule
+    let data = await fs.readFile("courseHistory.json", "utf8");
+    let courseHistory = JSON.parse(data);
+    let userPastSchedules = courseHistory[userName][scheduleCodeR];
+
+    // Sending back the user past schedule to the client
+    res.json(userPastSchedules);
+
+    // Closing the database connection
+    await closeDbConnection(db);
+  } catch (error) {
+    res.type("text").status(SERVER_ERROR_CODE)
+      .send("An error occurred on the server. Try again later.");
+  }
+});
+
 /** Signs out the user and updates the login status of that user to false. */
 app.post("/signout", async function(req, res) {
   let username = req.body.username;
@@ -153,9 +180,9 @@ app.get("/itemDetails/:className", async function(req, res) {
       let query = "SELECT * FROM classes WHERE shortName = ?;";
       let db = await getDBConnection();
       let result = await db.all(query, req.params.className);
+      await closeDbConnection(db);
       if (result.length !== 0) {
         res.json(result);
-        await closeDbConnection(db);
       } else {
         // May change later
         res.type("text").status(SERVER_ERROR_CODE)
@@ -189,8 +216,42 @@ app.post("/enrollCourse", async function(req, res) {
       // Extracting the text (true / false)
       let isUserLogin = result.loginStatus;
       checkLoginStatus(isUserLogin, className, classId, userName, db, res);
+      //await closeDbConnection(db); (debug this later)
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error:1", error);
+    }
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("No username is specified. Please login in before trying to adding a class");
+  }
+});
+
+/** Removes a specified course from history  */
+app.post("/removeCourse", async function(req, res) {
+  let userName = req.body.userName;
+  let className = req.body.className;
+  if (userName) {
+    let query = "DELETE FROM userCourses WHERE username = ? AND takingCourse = ?;";
+    try {
+      // Drop the course fromt the database
+      let db = await getDBConnection();
+      await db.run(query, [userName, className]);
+
+      // Update the available seats in the classes table
+      let updateSeats = "UPDATE classes SET availableSeats = availableSeats + 1" +
+                          "WHERE shortName = ?";
+      await db.run(updateSeats, className);
+
+      // Getting current courses from database
+      let currentCourses = await getCurrentCourses(db, userName, res);
+
+      // Update the course history
+      updateCourseHistory(db, userName, currentCourses); // double check this later
+
+      await closeDbConnection(db);
+
+    } catch (error) {
+      console.error("Error:2", error);
     }
   } else {
     res.type("text").status(USER_ERROR_CODE)
@@ -443,9 +504,7 @@ async function sendTransactionHelper(username, query, res) {
     // Extracting the text (true / false)
     let isUserLogin = result.loginStatus;
 
-    /**
-       * Get all schedules of courses for this user
-       */
+    // Get all schedules of courses for this user
     let data = await fs.readFile("courseHistory.json", "utf8");
     let courseHistory = JSON.parse(data);
     if (isUserLogin === "true") {
@@ -632,7 +691,7 @@ function applyConditionFilterHelper(nameAndValuesForAFilter, name, query) {
 /**
  * Primarly this function is meant to factor out code. The two purposes it serves is 1, updating the
  * state of the database with the client chosen course, 2 save a snapshot of the logged in user
- * code.
+ * schedule.
  * @param {sqlite3.Database} db - The SQLite database connection.
  * @param {String} className - Name of the class to the user selected course to enroll within
  * @param {String} userName - The username of the logged in user.
@@ -651,7 +710,28 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     let sql = "INSERT INTO userCourses (classId, username, takingCourse) VALUES (?, ?, ?);";
     await db.run(sql, [id, userName, className]);
 
+    let newCode = updateCourseHistory(db, userName, currentCourses);
+    return newCode;
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+/**
+ * Updates the course history of the user with the new course and enrollment confirmation.
+ * @param {sqlite3.Database} db - The SQLite database connection.
+ * @param {String} userName - The username of the logged in user.
+ * @param {Object[]} currentCourses - An array of courses that the user is currently taking
+ * @returns {String} - A string representing the confirmation of enrollment
+ */
+async function updateCourseHistory(db, userName, currentCourses) {
+
+  try {
     let newCode = createCode();
+
+    // Adding the new code as the the link to the most recent schedule to the database.
+    let newQuery = "UPDATE login SET scheduleCode = ? WHERE username = ?;";
+    await db.run(newQuery, [newCode, userName]);
 
     /**
      * Gather all the information for each course and add it to courseHistory array
@@ -668,11 +748,9 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     let studentClasses = await getStudentClassesInfo(db, currentCourses);
 
     helperConstructCourseHistory(newCode, studentClasses, userName);
-
-    await closeDbConnection(db);
     return newCode;
   } catch (error) {
-    handleError(error);
+    console.error("Error:3", error);
   }
 }
 
@@ -681,7 +759,7 @@ async function helperFunction(db, className, userName, currentCourses, id) {
  * to the courseHistory of the person.
  * @param {String} newCode - String representing the confirmation of enrollment
  * @param {Object} studentClasses - array representing the curring classes user is enrolled in
- * @param {*} userName - name of the user who is logged in.
+ * @param {String} userName - name of the user who is logged in.
  */
 async function helperConstructCourseHistory(newCode, studentClasses, userName) {
   /**
@@ -785,15 +863,15 @@ async function getStudentClassesInfo(db, currentCourses) {
  *                      true if so, if not false
  */
 async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
-  console.log(toBeEnrolledCourseDate);
-  console.log(currentCourses);
+
   let conflictInSchedule = false;
   try {
     for (let i = 0; i < currentCourses.length; i += 1) {
       let santizedInfo = await parsingOutDates(db, toBeEnrolledCourseDate, currentCourses[i]);
+
       /**
-       * Check each day the to be enrolled course takes places against logged in user
-       * current course days
+       * Check each day the to be enrolled course takes places against logged in user current
+       * course days
        */
       for (let j = 0; j < santizedInfo[2].length; j += 1) {
 
@@ -933,9 +1011,13 @@ app.listen(PORT);
  * the courseHistory object to a database. This will allow us to store the changes that occur after
  * the website has been closed.(Done)
  *
- * 2.) Debug the class enrollment feature. (Later time)
+ * 2.) Debug the class enrollment feature. (As we go)
  *
- * 3.) Think about how to access the most recent users schedule.
+ * 3.) Think about how to access the most recent users schedule. (Done)
  *
  * 4.) Design and research how to make visual schedule for the user.
+ *
+ * 5.) Add a endpoint to remove a course from the users schedule. (In - Progress, check reading and writing of courseHistory, and can try thunder client)
+ *
+ * 6.) Create a delete button on each of the courses in the view enrolled courses page.
  */
