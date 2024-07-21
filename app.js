@@ -23,6 +23,7 @@ const DEFAULT_PORT = 8000;
 const RANGE = 6;
 const MAX_ASCII = 126;
 const MIN_ASCII = 33;
+const MINUTES = 60;
 let confirmationCodes = new Set();
 
 /**
@@ -30,7 +31,6 @@ let confirmationCodes = new Set();
  * a users current courses
  *
  */
-
 
 // for application/x-www-form-urlencoded
 app.use(express.urlencoded({extended: true}));
@@ -85,6 +85,9 @@ app.get("/getSchedule/:userName", async function(req, res) {
     let data = await fs.readFile("courseHistory.json", "utf8");
     let courseHistory = JSON.parse(data);
     let userPastSchedules = courseHistory[userName][scheduleCodeR];
+
+    // adding the code to the user past schedules
+    userPastSchedules.push(scheduleCodeR);
 
     // Sending back the user past schedule to the client
     res.json(userPastSchedules);
@@ -733,32 +736,28 @@ async function updateCourseHistory(db, userName, currentCourses) {
     }
 
     let newCode = createCode();
-    console.log("Step 1: Generated new code");
 
     // Adding the new code as the link to the most recent schedule to the database
     let newQuery = "UPDATE login SET scheduleCode = ? WHERE username = ?;";
     await db.run(newQuery, [newCode, userName]);
-    console.log("Step 2: Updated scheduleCode in the login table");
 
     // Gather all the information for each course and update currentCourses
     let newClassRes = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
     currentCourses = await db.all(newClassRes, userName);
-    console.log("Step 3: Fetched current courses for the user");
 
-    // Grabbing information from each course the student is taking
-    // and assembling that into a larger array representing the current schedule
+    /*
+     * Grabbing information from each course the student is taking
+     * and assembling that into a larger array representing the current schedule
+     */
     let studentClasses = await getStudentClassesInfo(db, currentCourses);
-    console.log("Step 4: Retrieved detailed class information");
 
     helperConstructCourseHistory(newCode, studentClasses, userName);
-    console.log("Step 5: Constructed course history");
 
     return newCode;
   } catch (error) {
     console.error("Error in updateCourseHistory:", error);
   }
 }
-
 
 /**
  * Helper function used in helperFunction to add the newly course and enrollment confirmation
@@ -969,7 +968,7 @@ function timesOverlap(range1, range2) {
  */
 function convertToMinutes(time) {
   let [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
+  return hours * MINUTES + minutes;
 }
 
 /**
@@ -1025,5 +1024,5 @@ app.listen(PORT);
  *
  * 5.) Add a endpoint to remove a course from the users schedule. (Done)
  *
- * 6.) Create a delete button on each of the courses in the view enrolled courses page.
+ * 6.) Create a delete button on each of the courses in the view enrolled courses page. (In-progress, need to create event listener for remove button. Reminder for myself is to figure out how to reload the transactions page after a course has been removed. Lastly I need to style the remove button so that it is red and sliding background color animation occurs when a users hovers from left to right (color should be red and outline red too).)
  */

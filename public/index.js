@@ -56,7 +56,7 @@
    * Function that opens the users enrolled course page if and only if the user is logged in.
    * It also handles the event in which you exit out of the page.
    */
-  function openTransaction() {
+  async function openTransaction() {
     if (localStorage.length === 0) {
       id("error-message-enroll").textContent = "You must be logged in to view your " +
                                                "enrolled courses.";
@@ -65,7 +65,7 @@
       id("error-message-enroll").textContent = "";
       qs(".pop-up-body-enroll").innerHTML = "";
       qs(".close-button2").addEventListener("click", toggleEnrolledTransaction);
-      fetchEnrolledCourses();
+      await fetchEnrolledCourses();
     }
   }
 
@@ -102,47 +102,68 @@
    *                          enrolled courses
    * @param {Object} userTransactionCodes - Array of keys for the data (i.e transactionCodes)
    */
-  function parseOutAndAppendTransaction(data, enroll, userTransactionCodes) {
-    let DOMarr = [];
-    for (let i = 0; i < userTransactionCodes.length; i++) {
-      let currTCode = userTransactionCodes[i];
+  // eslint-disable-next-line max-lines-per-function, require-jsdoc
+  async function parseOutAndAppendTransaction(data, enroll, userTransactionCodes) {
+    // getting most recent transaction code first
+    let username = localStorage.key(0);
+    try {
+      let result = await fetch("/getSchedule/" + username);
+      await statusCheck(result);
+      let scheduleData = await result.json();
+      let mostRecentTransaction = scheduleData[scheduleData.length - 1];
 
-      // array of keys
-      let obj = {};
-      obj[currTCode] = [];
-      for (let j = 0; j < data[currTCode].length; j++) {
-        let currObj = data[currTCode][j];
-        let currCourseDOM = constructEnrolledCourses(currObj);
-        obj[currTCode].unshift(currCourseDOM);
-      }
-      DOMarr.unshift(obj);
-    }
-    for (let i = 0; i < DOMarr.length; i++) {
-      let currentObj = DOMarr[i];
-      let currentTCode = Object.keys(currentObj)[0];
-      let currDOMs = currentObj[currentTCode];
+      let DOMarr = [];
+      for (let i = 0; i < userTransactionCodes.length; i++) {
+        let currTCode = userTransactionCodes[i];
+        let mostRecentCode = currTCode === mostRecentTransaction;
 
-      let tCode = document.createElement("p");
-      tCode.textContent = currentTCode;
-      tCode.classList.add("enrolled-content");
-      tCode.classList.add("tCode-title");
-      enroll.appendChild(tCode);
-      for (let j = 0; j < currDOMs.length; j++) {
-        let currDOM = currDOMs[j];
-        enroll.appendChild(currDOM);
+        // array of keys
+        let obj = {};
+        obj[currTCode] = [];
+
+        // creating each course card for each transaction code
+        for (let j = 0; j < data[currTCode].length; j++) {
+          let currObj = data[currTCode][j];
+          let currCourseDOM = constructEnrolledCourses(currObj, mostRecentCode);
+          obj[currTCode].unshift(currCourseDOM);
+        }
+        DOMarr.unshift(obj);
       }
+
+      for (let i = 0; i < DOMarr.length; i++) {
+        let currentObj = DOMarr[i];
+        let currentTCode = Object.keys(currentObj)[0];
+        let currDOMs = currentObj[currentTCode];
+
+        let tCode = document.createElement("p");
+        tCode.textContent = currentTCode;
+        tCode.classList.add("enrolled-content");
+        tCode.classList.add("tCode-title");
+        enroll.appendChild(tCode);
+        for (let j = 0; j < currDOMs.length; j++) {
+          let currDOM = currDOMs[j];
+          enroll.appendChild(currDOM);
+        }
+      }
+    } catch (error) {
+      handleErr(error);
     }
   }
 
   /**
    * This method constructs the enrolled courses for the user and returns it as a DOM object.
    * @param {Object} data - Object that contains the data for the enrolled courses
+   * @param {Boolean} mostRecentCode - Boolean representing whether or not the transaction code
    * @returns {Object} - A fully built DOM object that represents the enrolled courses
    */
-  function constructEnrolledCourses(data) {
+  // eslint-disable-next-line max-lines-per-function, require-jsdoc
+  function constructEnrolledCourses(data, mostRecentCode) {
     let key = Object.keys(data)[0];
     let mainBody = document.createElement("article");
     mainBody.classList.add("enrolled-content");
+    if (mostRecentCode) {
+      mainBody.classList.add("most-recent");
+    }
 
     let courseName = document.createElement("h2");
     courseName.textContent = key;
@@ -163,13 +184,29 @@
     let courseCredits = document.createElement("p");
     courseCredits.textContent = "Credits: " + data[key].credits;
 
-    mainBody.appendChild(courseName);
-    mainBody.appendChild(courseDescription);
-    mainBody.appendChild(courseSubject);
-    mainBody.appendChild(courseDate);
-    mainBody.appendChild(courseSeats);
-    mainBody.appendChild(courseCredits);
+    if (mostRecentCode) {
+      let mostRecent = document.createElement("button");
 
+      // TODO: add event listener to remove the most recent course
+      // in the logic reload the user transaction page
+      mostRecent.textContent = "remove";
+      mostRecent.classList.add("most-recent-button");
+      mainBody.appendChild(courseName);
+      mainBody.appendChild(courseDescription);
+      mainBody.appendChild(courseSubject);
+      mainBody.appendChild(courseDate);
+      mainBody.appendChild(courseSeats);
+      mainBody.appendChild(courseCredits);
+      mainBody.appendChild(mostRecent);
+
+    } else {
+      mainBody.appendChild(courseName);
+      mainBody.appendChild(courseDescription);
+      mainBody.appendChild(courseSubject);
+      mainBody.appendChild(courseDate);
+      mainBody.appendChild(courseSeats);
+      mainBody.appendChild(courseCredits);
+    }
     return mainBody;
   }
 
