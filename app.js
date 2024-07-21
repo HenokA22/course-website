@@ -71,7 +71,6 @@ app.get("/getItems", async function(req, res) {
   }
 });
 
-
 /** Retrives the most recent users schedules with course information */
 app.get("/getSchedule/:userName", async function(req, res) {
   let userName = req.params.userName;
@@ -215,8 +214,9 @@ app.post("/enrollCourse", async function(req, res) {
 
       // Extracting the text (true / false)
       let isUserLogin = result.loginStatus;
-      checkLoginStatus(isUserLogin, className, classId, userName, db, res);
-      //await closeDbConnection(db); (debug this later)
+      await checkLoginStatus(isUserLogin, className, classId, userName, db, res);
+
+      await closeDbConnection(db);// (debug this later)
     } catch (error) {
       console.error("Error:1", error);
     }
@@ -239,16 +239,17 @@ app.post("/removeCourse", async function(req, res) {
 
       // Update the available seats in the classes table
       let updateSeats = "UPDATE classes SET availableSeats = availableSeats + 1" +
-                          "WHERE shortName = ?";
+                          " WHERE shortName = ?";
       await db.run(updateSeats, className);
 
       // Getting current courses from database
       let currentCourses = await getCurrentCourses(db, userName, res);
 
       // Update the course history
-      updateCourseHistory(db, userName, currentCourses); // double check this later
-
+      await updateCourseHistory(db, userName, currentCourses); // double check this later
       await closeDbConnection(db);
+      res.type("text").status(SUCCESS_CODE)
+        .send("Removing course successful");
 
     } catch (error) {
       console.error("Error:2", error);
@@ -284,7 +285,7 @@ async function checkLoginStatus(isUserLogin, className, classId, userName, db, r
         currentCourses
       );
       if (!conflictInScheduleResult) {
-        checkConflictHelper(db, currentCourses, className, userName, classId, res);
+        await checkConflictHelper(db, currentCourses, className, userName, classId, res);
       } else {
         res.type("text").status(USER_ERROR_CODE)
           .send("A conflict in your schedule has occured");
@@ -710,7 +711,7 @@ async function helperFunction(db, className, userName, currentCourses, id) {
     let sql = "INSERT INTO userCourses (classId, username, takingCourse) VALUES (?, ?, ?);";
     await db.run(sql, [id, userName, className]);
 
-    let newCode = updateCourseHistory(db, userName, currentCourses);
+    let newCode = await updateCourseHistory(db, userName, currentCourses);
     return newCode;
   } catch (error) {
     handleError(error);
@@ -725,34 +726,39 @@ async function helperFunction(db, className, userName, currentCourses, id) {
  * @returns {String} - A string representing the confirmation of enrollment
  */
 async function updateCourseHistory(db, userName, currentCourses) {
-
   try {
-    let newCode = createCode();
+    // Check if the database connection is open
+    if (!db || !db.open) {
+      throw new Error("Database connection is not open");
+    }
 
-    // Adding the new code as the the link to the most recent schedule to the database.
+    let newCode = createCode();
+    console.log("Step 1: Generated new code");
+
+    // Adding the new code as the link to the most recent schedule to the database
     let newQuery = "UPDATE login SET scheduleCode = ? WHERE username = ?;";
     await db.run(newQuery, [newCode, userName]);
+    console.log("Step 2: Updated scheduleCode in the login table");
 
-    /**
-     * Gather all the information for each course and add it to courseHistory array
-     * update the currentCourses to now include the newly inserted tuple.
-     */
+    // Gather all the information for each course and update currentCourses
     let newClassRes = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
     currentCourses = await db.all(newClassRes, userName);
+    console.log("Step 3: Fetched current courses for the user");
 
-    /**
-     * Grabing information from each course the student is taking putting that into an object
-     * Then applying then assembling that into a larger array that represents what the
-     * student is currently taking.
-     */
+    // Grabbing information from each course the student is taking
+    // and assembling that into a larger array representing the current schedule
     let studentClasses = await getStudentClassesInfo(db, currentCourses);
+    console.log("Step 4: Retrieved detailed class information");
 
     helperConstructCourseHistory(newCode, studentClasses, userName);
+    console.log("Step 5: Constructed course history");
+
     return newCode;
   } catch (error) {
-    console.error("Error:3", error);
+    console.error("Error in updateCourseHistory:", error);
   }
 }
+
 
 /**
  * Helper function used in helperFunction to add the newly course and enrollment confirmation
@@ -1017,7 +1023,7 @@ app.listen(PORT);
  *
  * 4.) Design and research how to make visual schedule for the user.
  *
- * 5.) Add a endpoint to remove a course from the users schedule. (In - Progress, check reading and writing of courseHistory, and can try thunder client)
+ * 5.) Add a endpoint to remove a course from the users schedule. (Done)
  *
  * 6.) Create a delete button on each of the courses in the view enrolled courses page.
  */
