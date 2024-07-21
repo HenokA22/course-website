@@ -8,8 +8,35 @@
 */
 
 body {
-  margin: 0;
-  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  font-family: "Karla", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: auto;
+}
+
+main {
+  width: 98%;
+  margin: auto;
+}
+
+h1 {
+  font-size: 1.6rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+footer {
+  margin-top: auto;
 }
 
 #header {
@@ -68,14 +95,14 @@ a {
 #main-body {
   display: flex;
   flex-direction: row;
-  height: 100vh;
+  /* height: 100vh; */
   margin-top: 30px;
   margin-bottom: 30px;
 }
 
 #filter-container, #course-list, #searching-container {
   padding: 10px 20px 10px 10px;
-  border: solid 2px black;
+  border: solid 1px rgb(190, 190, 190);
   border-radius: 5px;
   margin: 0 50px 0 10px;
 }
@@ -119,25 +146,22 @@ a {
 }
 
 #classes article {
-  margin-bottom: 40px;
-  padding: 10px;
-  border: solid 2px black;
-  max-width: 300px;
+  margin: 1rem;
+  padding: 1rem;
+  border: solid 1px rgb(190, 190, 190);
+  max-width: 40%;
   border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.856);
 }
 
 #classes {
   display: flex;
-  justify-content: space-evenly;
+  justify-content: space-between;
   flex-wrap: wrap;
 }
 
 #classes article:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-  background-color: rgb(47, 44, 44, 0.5);
+  box-shadow: 0 0 0.4rem rgb(190, 190, 190);
+  transition: box-shadow 0.25s ease-in-out;
   cursor: pointer;
 }
 

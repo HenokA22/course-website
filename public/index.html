@@ -16,6 +16,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="index.js"></script>
   </head>
@@ -38,163 +39,166 @@
         Sign Out
       </span>
     </nav>
+
     <nav id="logo-header">
       <h1 id="logo">UW</h1>
       <p id="visual-schedule">View Enrolled Schedule</p>
     </nav>
 
-    <section class="pop-up-login" id="pop-up-login">
-      <section class="pop-up-header">
-        <section class="title">Log-In</section>
-        <button class="close-button">&times;</button>
-      </section>
-      <section class="pop-up-body">
-        <div id="error-message"></div>
-        <div>
-          <label for="username">Username:</label>
-          <input type="text" id="username" name="username"
-            placeholder="Enter your username" required>
-          </div>
-        <div>
-          <label for="password">Password:</label>
-          <input type="password" id="password" name="password"
-            placeholder="Enter your password" required>
-          </div>
-        <button class="login-official">Log In</button>
-        <div>
-          <input type="checkbox" id="save-name" name="saveName">
-          <label for="save-name">Remember me</label><br>
-        </div>
-      </section>
-    </section>
-    <section id="overlay"></section>
-
-    <section class="pop-up-enroll" id="pop-up-enroll">
-      <section class="pop-up-header3">
-        <section class="title2">User Transaction</section>
-        <button class="close-button2">&times;</button>
-      </section>
-      <section class="pop-up-body-enroll">
-      </section>
-    </section>
-    <section id="overlay3"></section>
-    <!--
-      ***
-      Searching container is where the search bar will be
-      to look up courses for our main body
-      ***
-    -->
-    <section id="searching-container">
-      <div id="error-message-enroll"></div>
-      <h1>Find Courses:</h1>
-      <div id="search-container">
-        <label for="course-input">
-          <strong>Search:</strong>
-        </label>
-        <input type="text" placeholder="Search" id="course-input">
-        <button id="search-button" class="hidden">Search</button>
-        <button id="reset-button" class="hidden">Reset</button>
-      </div>
-    </section>
-    <section id="main-body">
-      <!--
-        ***
-        Filter container is where the filter options will
-        be for our main body
-        ***
-      -->
-      <article id="filter-container">
-        <nav>
-          <h1>Filter:</h1>
-        </nav>
-        <p>Course level:</p>
-        <form class="filter-check-boxes">
-          <input type="checkbox" id="course100" name="course100">
-          <label for="course100">100</label><br>
-          <input type="checkbox" id="course200" name="course200">
-          <label for="course200">200</label><br>
-          <input type="checkbox" id="course300" name="course300">
-          <label for="course300">300</label><br>
-          <input type="checkbox" id="course400" name="course400">
-          <label for="course400">400</label><br>
-          <input type="checkbox" id="course500" name="course500">
-          <label for="course500">500</label><br>
-        </form>
-
-        <p>Subjects:</p>
-        <form class="filter-check-boxes">
-          <input type="checkbox" id="computer-science" name="computer-science">
-          <label for="computer-science">Computer Science</label><br>
-          <input type="checkbox" id="english" name="english">
-          <label for="english">English</label><br>
-          <input type="checkbox" id="math" name="math">
-          <label for="math">Math</label><br>
-          <input type="checkbox" id="sociology" name="sociology">
-          <label for="sociology">Sociology</label><br>
-          <input type="checkbox" id="science" name="science">
-          <label for="science">Science</label><br>
-        </form>
-
-        <p>Credits:</p>
-        <form class="filter-check-boxes">
-          <input type="checkbox" id="cred1" name="cred1">
-          <label for="cred1">1</label><br>
-          <input type="checkbox" id="cred2" name="cred2">
-          <label for="cred2">2</label><br>
-          <input type="checkbox" id="cred3" name="cred3">
-          <label for="cred3">3</label><br>
-          <input type="checkbox" id="cred4" name="cred4">
-          <label for="cred4">4</label><br>
-          <input type="checkbox" id="cred5" name="cred5">
-          <label for="cred5">5</label><br>
-        </form>
-
-        <p>Days:</p>
-        <form class="filter-check-boxes">
-          <input type="checkbox" id="monday" name="monday">
-          <label for="monday">M</label><br>
-          <input type="checkbox" id="tuesday" name="tuesday">
-          <label for="tuesday">T</label><br>
-          <input type="checkbox" id="wednesday" name="wednesday">
-          <label for="wednesday">W</label><br>
-          <input type="checkbox" id="thursday" name="thursday">
-          <label for="cred4">TH</label><br>
-          <input type="checkbox" id="friday" name="friday">
-          <label for="friday">F</label><br>
-        </form>
-      </article>
-      <!--
-        ***
-        Course list is where the list of courses will be for our
-        main body
-        ***
-      -->
-      <article id="course-list">
-        <nav>
-          <h1>Courses</h1>
-        </nav>
-        <article class="course">
-          <!--
-            ***
-            List of courses here soon to come
-            ***
-          -->
-          <section id="classes">
-          </section>
-        </article>
-      </article>
-
-      <section class="pop-up-courses" id="pop-up-courses">
-        <section class="pop-up-header2">
-          <section class="title"></section>
+    <main>
+      <section class="pop-up-login" id="pop-up-login">
+        <section class="pop-up-header">
+          <section class="title">Log-In</section>
           <button class="close-button">&times;</button>
         </section>
-        <section class="body-course">
-          <div id="error-message-course"></div>
+        <section class="pop-up-body">
+          <div id="error-message"></div>
+          <div>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username"
+              placeholder="Enter your username" required>
+            </div>
+          <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password"
+              placeholder="Enter your password" required>
+            </div>
+          <button class="login-official">Log In</button>
+          <div>
+            <input type="checkbox" id="save-name" name="saveName">
+            <label for="save-name">Remember me</label><br>
+          </div>
         </section>
       </section>
-      <section id="overlay2"></section>
-    </section>
+      <section id="overlay"></section>
+
+      <section class="pop-up-enroll" id="pop-up-enroll">
+        <section class="pop-up-header3">
+          <section class="title2">User Transaction</section>
+          <button class="close-button2">&times;</button>
+        </section>
+        <section class="pop-up-body-enroll">
+        </section>
+      </section>
+      <section id="overlay3"></section>
+      <!--
+        ***
+        Searching container is where the search bar will be
+        to look up courses for our main body
+        ***
+      -->
+      <section id="searching-container">
+        <div id="error-message-enroll"></div>
+        <h1>Find Courses</h1>
+        <div id="search-container">
+          <label for="course-input">
+            Search
+          </label>
+          <input type="text" placeholder="Search" id="course-input">
+          <button id="search-button" class="hidden">Search</button>
+          <button id="reset-button" class="hidden">Reset</button>
+        </div>
+      </section>
+      <section id="main-body">
+        <!--
+          ***
+          Filter container is where the filter options will
+          be for our main body
+          ***
+        -->
+        <article id="filter-container">
+          <nav>
+            <h1>Filters</h1>
+          </nav>
+          <h2>Course level</h2>
+          <form class="filter-check-boxes">
+            <input type="checkbox" id="course100" name="course100">
+            <label for="course100">100</label><br>
+            <input type="checkbox" id="course200" name="course200">
+            <label for="course200">200</label><br>
+            <input type="checkbox" id="course300" name="course300">
+            <label for="course300">300</label><br>
+            <input type="checkbox" id="course400" name="course400">
+            <label for="course400">400</label><br>
+            <input type="checkbox" id="course500" name="course500">
+            <label for="course500">500</label><br>
+          </form>
+
+          <h2>Subjects</h2>
+          <form class="filter-check-boxes">
+            <input type="checkbox" id="computer-science" name="computer-science">
+            <label for="computer-science">Computer Science</label><br>
+            <input type="checkbox" id="english" name="english">
+            <label for="english">English</label><br>
+            <input type="checkbox" id="math" name="math">
+            <label for="math">Math</label><br>
+            <input type="checkbox" id="sociology" name="sociology">
+            <label for="sociology">Sociology</label><br>
+            <input type="checkbox" id="science" name="science">
+            <label for="science">Science</label><br>
+          </form>
+
+          <h2>Credits</h2>
+          <form class="filter-check-boxes">
+            <input type="checkbox" id="cred1" name="cred1">
+            <label for="cred1">1</label><br>
+            <input type="checkbox" id="cred2" name="cred2">
+            <label for="cred2">2</label><br>
+            <input type="checkbox" id="cred3" name="cred3">
+            <label for="cred3">3</label><br>
+            <input type="checkbox" id="cred4" name="cred4">
+            <label for="cred4">4</label><br>
+            <input type="checkbox" id="cred5" name="cred5">
+            <label for="cred5">5</label><br>
+          </form>
+
+          <h2>Days</h2>
+          <form class="filter-check-boxes">
+            <input type="checkbox" id="monday" name="monday">
+            <label for="monday">M</label><br>
+            <input type="checkbox" id="tuesday" name="tuesday">
+            <label for="tuesday">T</label><br>
+            <input type="checkbox" id="wednesday" name="wednesday">
+            <label for="wednesday">W</label><br>
+            <input type="checkbox" id="thursday" name="thursday">
+            <label for="cred4">TH</label><br>
+            <input type="checkbox" id="friday" name="friday">
+            <label for="friday">F</label><br>
+          </form>
+        </article>
+        <!--
+          ***
+          Course list is where the list of courses will be for our
+          main body
+          ***
+        -->
+        <article id="course-list">
+          <nav>
+            <h1>Courses</h1>
+          </nav>
+          <article class="course">
+            <!--
+              ***
+              List of courses here soon to come
+              ***
+            -->
+            <section id="classes">
+            </section>
+          </article>
+        </article>
+
+        <section class="pop-up-courses" id="pop-up-courses">
+          <section class="pop-up-header2">
+            <section class="title"></section>
+            <button class="close-button">&times;</button>
+          </section>
+          <section class="body-course">
+            <div id="error-message-course"></div>
+          </section>
+        </section>
+        <section id="overlay2"></section>
+      </section>
+    </main>
 
     <!--
       ***
