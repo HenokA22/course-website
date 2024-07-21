@@ -251,6 +251,7 @@ app.post("/removeCourse", async function(req, res) {
       // Update the course history
       await updateCourseHistory(db, userName, currentCourses); // double check this later
       await closeDbConnection(db);
+
       res.type("text").status(SUCCESS_CODE)
         .send("Removing course successful");
 
@@ -1024,5 +1025,5 @@ app.listen(PORT);
  *
  * 5.) Add a endpoint to remove a course from the users schedule. (Done)
  *
- * 6.) Create a delete button on each of the courses in the view enrolled courses page. (In-progress, need to create event listener for remove button. Reminder for myself is to figure out how to reload the transactions page after a course has been removed. Lastly I need to style the remove button so that it is red and sliding background color animation occurs when a users hovers from left to right (color should be red and outline red too).)
+ * 6.) Create a delete button on each of the courses in the view enrolled courses page. (In-progress, need to create event listener for remove button. Reminder for myself is to figure out how to reload the transactions page after a course has been removed.)
  */

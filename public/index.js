@@ -186,10 +186,13 @@
 
     if (mostRecentCode) {
       let mostRecent = document.createElement("button");
+      mostRecent.addEventListener("click", removeCourse);
 
-      // TODO: add event listener to remove the most recent course
-      // in the logic reload the user transaction page
-      mostRecent.textContent = "remove";
+      /*
+       * TODO: add event listener to remove the most recent course
+       * in the logic reload the user transaction page
+       */
+      mostRecent.textContent = "Remove Course";
       mostRecent.classList.add("most-recent-button");
       mainBody.appendChild(courseName);
       mainBody.appendChild(courseDescription);
@@ -208,6 +211,25 @@
       mainBody.appendChild(courseCredits);
     }
     return mainBody;
+  }
+
+  /**
+   * Function that fetches the search results based on the search term and displays them on the
+   * page.
+   */
+  async function removeCourse() {
+    let username = localStorage.key(0);
+    let className = this.parentNode.firstElementChild.textContent;
+    let formData = new FormData();
+    formData.append("userName", username);
+    formData.append("className", className);
+    try {
+      let result = await fetch("/removeCourse", {method: "POST", body: formData});
+      await statusCheck(result);
+    } catch (error) {
+      console.error("Error Message FrontEnd:", error);
+      handleErr(error);
+    }
   }
 
   /**
