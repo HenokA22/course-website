@@ -39,7 +39,7 @@ a {
 		content: 'mobile';
 		display: none;
 	}
-  
+
   .js & {
   	@include breakpoint(md) {
       width: calc(100% - 2*var(--component-padding));
@@ -116,7 +116,7 @@ a {
 .cd-schedule__events {
 	position: relative;
 	z-index: 1;
-  
+
   .js & {
   	@include breakpoint(md) {
   		width: 100%;
@@ -136,7 +136,7 @@ a {
 
 .cd-schedule__group { // group of same day events
   margin-bottom: var(--space-lg);
-  
+
   .js & {
     @include breakpoint(md) {
       flex-basis: 0;
@@ -166,7 +166,7 @@ a {
     opacity: 0;
     color: transparent;
   }
-  
+
   .js & {
     @include breakpoint(md) {
       height: calc(var(--schedule-rows-height)*var(--schedule-rows-number));
@@ -189,7 +189,7 @@ a {
     margin-bottom: var(--space-sm);
     font-weight: bold;
   }
-  
+
   .js & {
     @include breakpoint(md) {
       // vertically center its content
@@ -204,7 +204,7 @@ a {
         font-weight: normal;
         font-size: var(--text-sm);
         margin-bottom: 0;
-      } 
+      }
     }
   }
 }
@@ -217,7 +217,7 @@ a {
   max-width: 300px;
   margin-right: var(--space-md);
   transition: opacity .2s, background .2s;
-  
+
   a {
     display: block;
     height: 100%;
@@ -229,7 +229,7 @@ a {
   a::before { // event start/end date
     content: attr(data-start)' - 'attr(data-end);
   }
-  
+
   .js & {
     @include breakpoint(sm) {
       width: 40%;
@@ -285,7 +285,7 @@ a {
 }
 
 .cd-schedule-modal__date, // not included in the the HTML but added using JavScript
-.cd-schedule__event a::before { 
+.cd-schedule__event a::before {
 	opacity: .7;
 	margin-bottom: var(--space-xxxs);
 
@@ -407,14 +407,14 @@ a {
   }
 }
 
-.cd-schedule-modal__header-bg, 
+.cd-schedule-modal__header-bg,
 .cd-schedule-modal__body-bg { // these are the morphing backgrounds - visible on desktop only
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
   width: 100%;
-  
+
   @include breakpoint(md) {
     // Force Hardware acceleration
     transform: translateZ(0);
@@ -426,7 +426,7 @@ a {
 .cd-schedule-modal__header-bg {
   z-index: 2;
   transform-origin: top center;
-  
+
   @include breakpoint(md) {
     transition: transform .4s;
     transition-timing-function: cubic-bezier(.5,0,.1,1);
@@ -447,7 +447,7 @@ a {
 .cd-schedule-modal--no-transition {
   transition: none;
 
-  .cd-schedule-modal__header-bg, 
+  .cd-schedule-modal__header-bg,
   .cd-schedule-modal__body-bg {
     transition: none !important;
   }

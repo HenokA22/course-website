@@ -84,12 +84,32 @@ a {
   margin-bottom: 20px;
 }
 
-#login:hover, #display-login:hover, #logo:hover {
+#login:hover, #display-login:hover, #logo:hover, #visual:hover {
   background-color: lightgrey;
 }
 
 #visual-schedule:hover, #signout:hover, #display-user:hover {
   background-color: lightgray;
+}
+
+#schedule-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+}
+
+
+#visual-schedule, #visual {
+  padding: 30px 25px;
+}
+
+#visual {
+  padding-left: 25px;
+  padding-right: 25px;
+  margin: 0;
+  display: inline;
+  color: white;
 }
 
 #main-body {
@@ -179,7 +199,7 @@ a {
   max-width: 80%;
 }
 
-.pop-up-courses, .pop-up-enroll {
+.pop-up-courses, .pop-up-enroll, .pop-up-schedule {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -193,7 +213,8 @@ a {
   max-width: 80%;
 }
 
-.pop-up-login.active, .pop-up-courses.active, .pop-up-enroll.active {
+
+.pop-up-login.active, .pop-up-courses.active, .pop-up-enroll.active, .pop-up-schedule.active {
   transform: translate(-50%, -50%) scale(1);
   transition: transform 0.3s;
 }
@@ -211,7 +232,7 @@ a {
   font-weight: bold;
 }
 
-.pop-up-header .close-button, .pop-up-header2 .close-button, .close-button2 {
+.pop-up-header .close-button, .pop-up-header2 .close-button, .close-button2, .close-button3 {
   cursor: pointer;
   border: none;
   outline: none;

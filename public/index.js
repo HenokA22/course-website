@@ -35,6 +35,7 @@
     id("signout").addEventListener("click", signout);
     id("search-button").addEventListener("click", fetchSearchBar);
     id("visual-schedule").addEventListener("click", openTransaction);
+    id("visual").addEventListener("click", openSchedule);
     id("reset-button").addEventListener("click", () => {
       id("classes").innerHTML = '';
       load();
@@ -54,6 +55,14 @@
 
   /**
    * Function that opens the users enrolled course page if and only if the user is logged in.
+   */
+  function toggleEnrolledTransaction2() {
+    id("pop-up-schedule").classList.toggle("active");
+    id("overlay3").classList.toggle("active");
+  }
+
+  /**
+   * Function that opens the users enrolled course page if and only if the user is logged in.
    * It also handles the event in which you exit out of the page.
    */
   async function openTransaction() {
@@ -66,6 +75,22 @@
       qs(".pop-up-body-enroll").innerHTML = "";
       qs(".close-button2").addEventListener("click", toggleEnrolledTransaction);
       await fetchEnrolledCourses();
+    }
+  }
+
+  /**
+   * Function that opens the users enrolled course page if and only if the user is logged in.
+   */
+  function openSchedule() {
+    if (localStorage.length === 0) {
+      id("error-message-enroll").textContent = "You must be logged in to view your " +
+                                               "enrolled courses.";
+      id("error-message-enroll").classList.add("error");
+    } else {
+      qs(".close-button3").addEventListener("click", toggleEnrolledTransaction2);
+      toggleEnrolledTransaction2();
+
+      // fetchSchedule();
     }
   }
 
