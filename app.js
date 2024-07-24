@@ -1026,9 +1026,13 @@ app.listen(PORT);
  *    4a.) Create the button to view the visual schedule (Done)
  *
  *    4b.) Create the pop up window to display the visual schedule (Get inspo from view enrolled
- *          schedules page) (In-progress, still need to style the page and make the x a glowing red
- *          x button, possibly think of a fill in x animation that I saw to create the remove button
- *          but the other implementation.)
+ *          schedules page) (Done)
+ *    4c.) Create the visual schedule for the user (Done)
+ *
+ *    4d.) Space the items out and brainstorm how to call the most recent schedule information
+ *         and populate the schedule. Consult the image in ipad about class (HTML li) structure.
+ *         (TODO)
+ *    4e.) Make the visual schedule look pretty (TODO)
  *
  * 5.) Add a endpoint to remove a course from the users schedule. (Done)
  *
