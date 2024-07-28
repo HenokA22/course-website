@@ -302,12 +302,47 @@ a {
   display: flex;
   justify-content: flex-start;
 }
+
+.schedule-group {
+  border: 2px black solid;
+}
+
+.schedule-group > ul {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.schedule-event {
+  list-style-type: none;
+  display: block;
+  align-self: center;
+  margin-right: 25px;
+}
+
 .schedule-events {
   flex: 0 0 90%;
+  display: flex;
 }
+
 .schedule-events > ul {
+  list-style-type: none;
   display: flex;
   justify-content: space-between;
+  flex: 0 0 90%;
+  margin-top: 0px;
+  margin-bottom: 10px;
+
+}
+
+.schedule-day {
+  text-align: center;
+}
+
+
+.schedule-day > span {
+  text-decoration: underline;
 }
 
 .error {
