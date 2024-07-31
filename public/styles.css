@@ -314,11 +314,21 @@ a {
   align-items: center;
 }
 
+.first-schedule-time {
+  padding-top: 20px;
+}
+
+.schedule-time {
+  border: 2px black solid;
+  padding-bottom: 25px;
+}
+
 .schedule-event {
   list-style-type: none;
   display: block;
   align-self: center;
   margin-right: 25px;
+  border: 2px black solid;
 }
 
 .schedule-events {

@@ -1031,8 +1031,10 @@ app.listen(PORT);
  *
  *    4d.) Space the items out and brainstorm how to call the most recent schedule information
  *         and populate the schedule. Consult the image in ipad about class (HTML li) structure.
- *         (In-progress). Improve the spacing!!
+ *         (In-progress).
  *    4e.) Make the visual schedule look pretty (TODO)
+ *
+ *    4f.) Remove list dot styling (TODO)
  *
  * 5.) Add a endpoint to remove a course from the users schedule. (Done)
  *
