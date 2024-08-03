@@ -1029,9 +1029,13 @@ app.listen(PORT);
  *          schedules page) (Done)
  *    4c.) Create the visual schedule for the user (Done)
  *
- *    4d.) Space the items out and brainstorm how to call the most recent schedule information
- *         and populate the schedule. Consult the image in ipad about class (HTML li) structure.
- *         (In-progress).
+ *    4d.) Space the items out (DONE) and brainstorm how to call the most recent schedule
+ *         information and populate the schedule. Consult the image in ipad about class (HTML li)
+ *         structure.
+ *         (Done)
+ *
+ *          (TODO) Test out the loading of new classes (Try to enroll in a new class live)
+ *          (TODO) Add removal of li items from days ul when loading schedule population (DONE)
  *    4e.) Make the visual schedule look pretty (TODO)
  *
  *    4f.) Remove list dot styling (TODO)
@@ -1040,4 +1044,10 @@ app.listen(PORT);
  *
  * 6.) Create a delete button on each of the courses in the view enrolled courses page. (Done Basic)
  *     (TODO: how to remove course without making the transactions page go away.)
+ *     (TODO: How to remove the course from the visual schedule but make li disapear live instead
+ *            of having to close modal and reopen it.)
+ *
+ *
+ * 7.) Bug: When adding courses with a mulitiple times, the first course with the earliest time is
+ *        added to the schedule. (TODO: Fix this bug)
  */

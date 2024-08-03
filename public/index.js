@@ -56,9 +56,142 @@
   /**
    * Function that opens the users enrolled course page if and only if the user is logged in.
    */
-  function toggleEnrolledTransaction2() {
+  async function toggleEnrolledTransaction2() {
     id("pop-up-schedule").classList.toggle("active");
     id("overlay3").classList.toggle("active");
+
+    /*
+     * manipulate the page using api info
+     * get all course info.
+     */
+    try {
+      let userName = localStorage.key(0);
+      let result = await fetch("/getSchedule/" + userName);
+      await statusCheck(result);
+      let data = await result.json();
+      populateSchedule(data);
+    } catch (error) {
+      handleErr(error);
+    }
+  }
+
+  /**
+   * Populates the schedule page with the courses that the user has enrolled in.
+   * @param {JSON} data The courses in json format that the user has enrolled in.
+   */
+  function populateSchedule(data) {
+    let allul = qsa(".schedule-group ul");
+
+    // Clear all the days in the schedule
+    for (let i = 0; i < allul.length; i++) {
+      allul[i].innerHTML = '';
+    }
+
+    for (let i = 0; i < data.length - 1; i++) {
+      let courseObj = data[i];
+      let classKey = Object.keys(courseObj);
+
+      // later add feature to enable clickable modal to show more info (such as description)
+      let className = classKey[0];
+      let classDate = courseObj[classKey].date;
+      let currCourseDOMAndDate = constructSchedule(className, classDate);
+      let days = currCourseDOMAndDate[1];
+
+      // adding class to each day of the week it occurs
+      for (let j = 0; j < days.length; j++) {
+        // **Create a new instance for each day**
+        let courseDOM = constructSchedule(className, classDate)[0];
+        placeNewClass(courseDOM, days[j]);
+      }
+    }
+
+    // Get the start time of the class
+    let allClasses = qsa(".schedule-event");
+    for (let i = 0; i < allClasses.length; i++) {
+      console.log(allClasses[i]);
+      allClasses[i].style.position = 'relative';
+      setClassPosition(allClasses[i]);
+    }
+  }
+
+  /**
+   * Sets the position of the class in the schedule based on the start and end time.
+   * @param {HTMLElement} classDOM - The class DOM object to be shifts in
+   */
+  function setClassPosition(classDOM) {
+    let startTime = classDOM.querySelector("a").getAttribute("date-start");
+    let allTimes = qsa(".schedule-time > span");
+
+    // Ensure classDOM has the correct position
+    //classDOM.style.position = 'fixed'; // Adjust as needed
+
+    for (let i = 0; i < allTimes.length; i++) {
+      // Get the current time element
+      let currTime = allTimes[i];
+      console.log(currTime.textContent);
+      console.log(startTime);
+      // Check if the time matches the start time
+      if (currTime.textContent === startTime) {
+        let offSetHeight = currTime.offsetTop;
+        console.log(offSetHeight);
+        classDOM.style.top = `${offSetHeight - 125}px`;
+        console.log(classDOM.style.top);
+
+        // Break the loop once the position is set
+        // eslint-disable-next-line no-restricted-syntax
+        break;
+      }
+    }
+  }
+
+  /**
+   * Creates the HTML for a single course in the schedule.
+   * @param {String} className - The name of the class.
+   * @param {String} classDate - A formated string of the class date info.
+   * @returns {Array} - An array containing the DOM object for the course and the days the class
+   */
+  function constructSchedule(className, classDate) {
+    // Creating the main container for the course
+    let newClass = document.createElement("li");
+    newClass.classList.add("schedule-event");
+
+    // Using a link to store class information
+    let classInfo = document.createElement("a");
+
+    // storing the class name and date in the link
+    let dateTime = classDate.split(/\s{2}/);
+    let days = dateTime[0].split(" ");
+    let startTime = dateTime[1].split("-")[0];
+    let endTime = dateTime[1].split("-")[1];
+    classInfo.setAttribute("date-start", startTime);
+    classInfo.setAttribute("date-end", endTime);
+    classInfo.setAttribute("href", "#0");
+
+    // Creating the course name element
+    let courseName = document.createElement("em");
+    courseName.classList.add("schedule-name");
+    courseName.textContent = className;
+
+    // Linking HTML together
+    classInfo.appendChild(courseName);
+    newClass.appendChild(classInfo);
+    return [newClass, days];
+  }
+
+  /**
+   * Places the class in the correct day of the week in HTML
+   * @param {HTMLLIElement} classDOM - The class DOM object to be placed in the schedule
+   * @param {String} day - Short names for days of the week for the class
+   */
+  function placeNewClass(classDOM, day) {
+    // Map short day names to full day names
+    let dayMap = new Map([["M", "Monday"], ["T", "Tuesday"], ["W", "Wednesday"],
+                          ["Th", "Thursday"], ["F", "Friday"]]);
+    let dayLong = dayMap.get(day);
+    let dayContainer = id(dayLong);
+
+    // Add class to the correct day container
+    dayContainer.appendChild(classDOM);
   }
 
   /**
@@ -81,14 +214,14 @@
   /**
    * Function that opens the users enrolled course page if and only if the user is logged in.
    */
-  function openSchedule() {
+  async function openSchedule() {
     if (localStorage.length === 0) {
       id("error-message-enroll").textContent = "You must be logged in to view your " +
                                                "enrolled courses.";
       id("error-message-enroll").classList.add("error");
     } else {
       qs(".close-button3").addEventListener("click", toggleEnrolledTransaction2);
-      toggleEnrolledTransaction2();
+      await toggleEnrolledTransaction2();
 
       // fetchSchedule();
     }
@@ -706,7 +839,6 @@
                                     await response.text() + "'";
 
           id('error-message-course').insertAdjacentElement('afterend', successMsg);
-
           enrollOfficialHelper();
         } else {
           id("error-message-course").textContent = await response.text();
@@ -1065,5 +1197,4 @@
   function qsa(query) {
     return document.querySelectorAll(query);
   }
-
 })();

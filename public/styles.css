@@ -308,10 +308,7 @@ a {
 }
 
 .schedule-group > ul {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  height: 100%;
 }
 
 .first-schedule-time {
@@ -319,8 +316,10 @@ a {
 }
 
 .schedule-time {
+  padding-top: 20px;
   border: 2px black solid;
   padding-bottom: 25px;
+  list-style-type: none;
 }
 
 .schedule-event {
@@ -332,8 +331,9 @@ a {
 }
 
 .schedule-events {
-  flex: 0 0 90%;
   display: flex;
+  flex: 1;
+  height: 1300px;
 }
 
 .schedule-events > ul {
@@ -492,7 +492,7 @@ a {
 .pop-up-schedule-tbd {
   background-color: lightgray;
   padding: 20px;
-  max-height: 70vh;
+  max-height: 80vh;
   overflow-y: auto;
 }
 
