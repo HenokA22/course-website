@@ -305,10 +305,22 @@ a {
 
 .schedule-group {
   border: 2px black solid;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .schedule-group > ul {
   height: 100%;
+}
+
+#Tuesday {
+  padding-left: 25px;
+  padding-right: 25px;
+}
+
+#Friday {
+  padding-left: 30px;
+  padding-right: 30px;
 }
 
 .first-schedule-time {
@@ -328,7 +340,12 @@ a {
   align-self: center;
   margin-right: 25px;
   border: 2px black solid;
+  padding-left: 10px;
+  padding-right: 10px;
+  background-color: violet;
 }
+
+
 
 .schedule-events {
   display: flex;

@@ -105,43 +105,62 @@
       }
     }
 
-    // Get the start time of the class
+    // Set the position of class and time containers to relative
+    qs(".schedule-timeline").style.position = "relative";
+
+    // Postion the classes based on time
     let allClasses = qsa(".schedule-event");
+
     for (let i = 0; i < allClasses.length; i++) {
-      console.log(allClasses[i]);
-      allClasses[i].style.position = 'relative';
-      setClassPosition(allClasses[i]);
+      let aClass = allClasses[i];
+      aClass.parentNode.parentNode.style.position = "relative";
+      aClass.style.position = "absolute";
+      fixPosition(aClass);
     }
   }
 
   /**
-   * Sets the position of the class in the schedule based on the start and end time.
-   * @param {HTMLElement} classDOM - The class DOM object to be shifts in
+   * Places the class at the correct time in the schedule.
+   * @param {HTMLElement} aClass - The class to be positioned in the schedule.
    */
-  function setClassPosition(classDOM) {
-    let startTime = classDOM.querySelector("a").getAttribute("date-start");
-    let allTimes = qsa(".schedule-time > span");
-
-    // Ensure classDOM has the correct position
-    //classDOM.style.position = 'fixed'; // Adjust as needed
-
+  function fixPosition(aClass) {
+    let time = aClass.querySelector("a").getAttribute("date-start");
+    let allTimes = qsa(".schedule-time");
     for (let i = 0; i < allTimes.length; i++) {
-      // Get the current time element
-      let currTime = allTimes[i];
-      console.log(currTime.textContent);
-      console.log(startTime);
-      // Check if the time matches the start time
-      if (currTime.textContent === startTime) {
-        let offSetHeight = currTime.offsetTop;
-        console.log(offSetHeight);
-        classDOM.style.top = `${offSetHeight - 125}px`;
-        console.log(classDOM.style.top);
+      let scheduleTime = allTimes[i].querySelector("span").textContent;
+      if (scheduleTime === time) {
+        aClass.style.top = allTimes[i].offsetTop + "px";
+        aClass.style.left = "15px";
 
-        // Break the loop once the position is set
+        // Fix the height of the class
+        let endTime = aClass.querySelector("a").getAttribute("date-end");
+        console.log(endTime);
+        console.log(time);
+        let totalMin = convertMilitaryTimeToMinutes(endTime) - convertMilitaryTimeToMinutes(time);
+        console.log(totalMin);
+        let height = (2.216666666666667) * totalMin;
+
+        aClass.style.height = height + "px";
         // eslint-disable-next-line no-restricted-syntax
         break;
       }
     }
+  }
+
+  /**
+   * Convert the time string to minutes.
+   * @param {String} timeString - The time string to be converted to minutes.
+   * @returns {String} - A number representing the time in minutes.
+   */
+  function convertMilitaryTimeToMinutes(timeString) {
+    // Split the time string into hours and minutes
+    const [hours, minutes] = timeString.split(':');
+
+    // Convert hours and minutes to integers
+    const hoursInMinutes = parseInt(hours, 10) * 60;
+    const totalMinutes = hoursInMinutes + parseInt(minutes, 10);
+
+    return totalMinutes;
   }
 
   /**

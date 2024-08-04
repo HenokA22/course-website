@@ -1013,41 +1013,20 @@ app.listen(PORT);
 /**
  * To - dos:
  *
- * 1.) In order to store changes that occur after a website has been closed, we need to change
- * the courseHistory object to a database. This will allow us to store the changes that occur after
- * the website has been closed.(Done)
+ * 1.) Debug the class enrollment feature. (As we go)
  *
- * 2.) Debug the class enrollment feature. (As we go)
+ * 2.) (TODO) Test out the loading of new classes (Try to enroll in a new class live)
  *
- * 3.) Think about how to access the most recent users schedule. (Done)
  *
- * 4.) Design and research how to make visual schedule for the user. (figure out if creating the
- *    scheudle or resuing other code is what we need to do.)
- *    4a.) Create the button to view the visual schedule (Done)
+ * 3.) Make the visual schedule look pretty (TODO)
  *
- *    4b.) Create the pop up window to display the visual schedule (Get inspo from view enrolled
- *          schedules page) (Done)
- *    4c.) Create the visual schedule for the user (Done)
  *
- *    4d.) Space the items out (DONE) and brainstorm how to call the most recent schedule
- *         information and populate the schedule. Consult the image in ipad about class (HTML li)
- *         structure.
- *         (Done)
+ * 4.) (TODO: how to remove course without making the transactions page go away.)
  *
- *          (TODO) Test out the loading of new classes (Try to enroll in a new class live)
- *          (TODO) Add removal of li items from days ul when loading schedule population (DONE)
- *    4e.) Make the visual schedule look pretty (TODO)
- *
- *    4f.) Remove list dot styling (TODO)
- *
- * 5.) Add a endpoint to remove a course from the users schedule. (Done)
- *
- * 6.) Create a delete button on each of the courses in the view enrolled courses page. (Done Basic)
- *     (TODO: how to remove course without making the transactions page go away.)
- *     (TODO: How to remove the course from the visual schedule but make li disapear live instead
+ * 5.) (TODO: How to remove the course from the visual schedule but make li disapear live instead
  *            of having to close modal and reopen it.)
  *
  *
- * 7.) Bug: When adding courses with a mulitiple times, the first course with the earliest time is
+ * 6.) Bug: When adding courses with a mulitiple times, the first course with the earliest time is
  *        added to the schedule. (TODO: Fix this bug)
  */
