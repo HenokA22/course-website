@@ -80,8 +80,6 @@ Back End
 Based on your implementation choices, it might be better to combine some of the endpoints listed above or split them into multiple smaller endpoints. This is allowed as long as you make sure to include all of the same back end functionality. However, you must have at least 4 endpoints defined in your `app.js`.
 
 ### Additional Features (Choose Two)
-You must implement at least two (2) additional features. Below are lists of options for each project type. Your 2 additional features must come from the options listed under your specific project type. (You are welcome to implement more features from these lists or otherwise, especially if your goal is to use this assignment in your portfolio, but they will not be graded.)  **All** additional features must have both front and back end implementations and sufficient error handling.
-
 
 #### Course Enrollment Site
 
