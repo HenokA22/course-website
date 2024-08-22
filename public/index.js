@@ -14,6 +14,13 @@
   let filterArrSubject = [];
   let filterArrCredit = [];
   let filterArrCourseLevel = [];
+  let dayMap = new Map([
+    ["M", "Monday"],
+    ["T", "Tuesday"],
+    ["W", "Wednesday"],
+    ["Th", "Thursday"],
+    ["F", "Friday"]
+  ]);
   const USER_ERROR_CODE = 400;
   const SUCCESS_CODE = 200;
   const SECONDS = 2000;
@@ -200,8 +207,86 @@
     return [newClass, days];
   }
 
+  /**
+   * openCoursePopup constructs the DOM structure of the pop up modal of the info from the specific class the user selects.
+   * @param {String} className - The name of the class.
+   * @param {String} classDate - A formated string of the class date info.
+   */
   function openCoursePopup(className, classDate) {
-    console.log("temp for now.");
+    let popup = document.getElementById('course-popup');
+    let overlay = document.getElementById('overlay4');
+
+    // Populate the popup with course details
+    document.getElementById('popup-course-name').textContent = className;
+    let dateTime = classDate.split(/\s{2}/);
+    let days = dateTime[0];
+    let time = dateTime[1];
+    document.getElementById('popup-course-date').textContent = `Days: ${days}`;
+    document.getElementById('popup-course-time').textContent = `Time: ${time}`;
+
+    // Show the popup and overlay
+    popup.style.display = 'block';
+    overlay.style.display = 'block';
+
+    // Set up the event listener for the Remove Course button
+    document.getElementById('remove-course-btn').onclick = function() {
+      removeCourseFromSchedule(className, days);
+    };
+
+    // Close the popup when clicking the close button
+    document.getElementById('close-popup').onclick = function() {
+      closeCoursePopup();
+    };
+
+    // Close the popup when clicking outside of it
+    overlay.onclick = function() {
+      closeCoursePopup();
+    };
+  }
+
+  /**
+   * closes the pop up for the visual schedule details of a class.
+   */
+  function closeCoursePopup() {
+    let popup = document.getElementById('course-popup');
+    let overlay = document.getElementById('overlay4');
+    popup.style.display = 'none';
+    overlay.style.display = 'none';
+  }
+
+  /**
+   * Removes a course from the user's visual schedule and updates the db properly to account for this.
+   * @param {String} className - name of the class
+   * @param {String} days - the specific days of the class
+   */
+  async function removeCourseFromSchedule(className, days) {
+    let userName = localStorage.key(0);
+    let formData = new FormData();
+    formData.append("userName", userName);
+    formData.append("className", className);
+
+    try {
+      let result = await fetch("/removeCourse", { method: "POST", body: formData });
+      await statusCheck(result);
+
+      // Remove the course from the visual schedule
+      days.split(" ").forEach(day => {
+        let dayContainer = id(dayMap.get(day));
+        let classElements = dayContainer.querySelectorAll('.schedule-event');
+        classElements.forEach(classElement => {
+          if (classElement.querySelector("em").textContent === className) {
+            classElement.remove();
+          }
+        });
+      });
+
+      // Close the popup after removing the course
+      closeCoursePopup();
+
+    } catch (error) {
+      console.error("Error removing course:", error);
+      handleErr(error);
+    }
   }
 
   /**
@@ -211,8 +296,6 @@
    */
   function placeNewClass(classDOM, day) {
     // Map short day names to full day names
-    let dayMap = new Map([["M", "Monday"], ["T", "Tuesday"], ["W", "Wednesday"],
-                          ["Th", "Thursday"], ["F", "Friday"]]);
     let dayLong = dayMap.get(day);
     let dayContainer = id(dayLong);
 
