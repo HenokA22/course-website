@@ -101,13 +101,15 @@
       // later add feature to enable clickable modal to show more info (such as description)
       let className = classKey[0];
       let classDate = courseObj[classKey].date;
-      let currCourseDOMAndDate = constructSchedule(className, classDate);
+      let classCredit = courseObj[classKey].credits;
+      let classDescription = courseObj[classKey].description;
+      let currCourseDOMAndDate = constructSchedule(className, classDate, classCredit, classDescription);
       let days = currCourseDOMAndDate[1];
 
       // adding class to each day of the week it occurs
       for (let j = 0; j < days.length; j++) {
         // **Create a new instance for each day**
-        let courseDOM = constructSchedule(className, classDate)[0];
+        let courseDOM = constructSchedule(className, classDate, classCredit, classDescription)[0];
         placeNewClass(courseDOM, days[j]);
       }
     }
@@ -174,9 +176,11 @@
    * Creates the HTML for a single course in the schedule.
    * @param {String} className - The name of the class.
    * @param {String} classDate - A formated string of the class date info.
+   * @param {String} classCredit - Credit for the class
+   * @param {String} classDescription - Description for the class
    * @returns {Array} - An array containing the DOM object for the course and the days the class
    */
-  function constructSchedule(className, classDate) {
+  function constructSchedule(className, classDate, classCredit, classDescription) {
     // Creating the main container for the course
     let newClass = document.createElement("li");
     newClass.classList.add("schedule-event");
@@ -194,7 +198,7 @@
     classInfo.setAttribute("href", "#0");
 
     classInfo.onclick = function() {
-      openCoursePopup(className, classDate);
+      openCoursePopup(className, classDate, classCredit, classDescription);
     }
     // Creating the course name element
     let courseName = document.createElement("em");
@@ -211,8 +215,10 @@
    * openCoursePopup constructs the DOM structure of the pop up modal of the info from the specific class the user selects.
    * @param {String} className - The name of the class.
    * @param {String} classDate - A formated string of the class date info.
+   * @param {String} classCredit - Credit for the class
+   * @param {String} classDescription - Description for the class
    */
-  function openCoursePopup(className, classDate) {
+  function openCoursePopup(className, classDate, classCredit, classDescription) {
     let popup = document.getElementById('course-popup');
     let overlay = document.getElementById('overlay4');
 
@@ -221,8 +227,11 @@
     let dateTime = classDate.split(/\s{2}/);
     let days = dateTime[0];
     let time = dateTime[1];
-    document.getElementById('popup-course-date').textContent = `Days: ${days}`;
-    document.getElementById('popup-course-time').textContent = `Time: ${time}`;
+
+    document.getElementById('popup-course-description').innerHTML = `<strong>Description:</strong> ${classDescription}`;
+    document.getElementById('popup-course-credit').innerHTML = `<strong>Credits:</strong> ${classCredit}`;
+    document.getElementById('popup-course-date').innerHTML = `<strong>Days:</strong> ${days}`;
+    document.getElementById('popup-course-time').innerHTML = `<strong>Time:</strong> ${time}`;
 
     // Show the popup and overlay
     popup.style.display = 'block';
