@@ -186,6 +186,9 @@
     classInfo.setAttribute("date-end", endTime);
     classInfo.setAttribute("href", "#0");
 
+    classInfo.onclick = function() {
+      openCoursePopup(className, classDate);
+    }
     // Creating the course name element
     let courseName = document.createElement("em");
     courseName.classList.add("schedule-name");
@@ -195,6 +198,10 @@
     classInfo.appendChild(courseName);
     newClass.appendChild(classInfo);
     return [newClass, days];
+  }
+
+  function openCoursePopup(className, classDate) {
+    console.log("temp for now.");
   }
 
   /**
@@ -262,6 +269,7 @@
         toggleEnrolledTransaction();
         let data = await result.json();
         let enroll = qs(".pop-up-body-enroll");
+        console.log(enroll);
         let userTransactionCodes = Object.keys(data);
         parseOutAndAppendTransaction(data, enroll, userTransactionCodes);
       }
@@ -403,6 +411,15 @@
     try {
       let result = await fetch("/removeCourse", {method: "POST", body: formData});
       await statusCheck(result);
+
+      let result2 = await fetch("/previousTransactions?username=" + username);
+      await statusCheck(result2);
+      let data = await result2.json();
+      let enroll = qs(".pop-up-body-enroll");
+      enroll.innerHTML = "";
+      let userTransactionCodes = Object.keys(data);
+      parseOutAndAppendTransaction(data, enroll, userTransactionCodes);
+
     } catch (error) {
       console.error("Error Message FrontEnd:", error);
       handleErr(error);
@@ -788,7 +805,6 @@
     classContainer.appendChild(courseCapacity);
     classContainer.appendChild(courseEnrollmentBox);
     classContainer.appendChild(hiddenId);
-
     return classContainer;
   }
 
@@ -841,7 +857,9 @@
         let params = new FormData();
         let username = localStorage.key(0);
         let className = qsa('.title')[1].textContent.split(' - ')[0].trim();
-        let userId = id('hiddenId').textContent;
+        // determine which hidden id you are referring to this will be based on the current checkbox you have selected.
+        let checkedBox = document.querySelector('.enrollBox:checked');
+        let userId = checkedBox.parentNode.querySelector('#hiddenId').textContent;
         params.append("userName", username);
         params.append("className", className);
         params.append("id", userId);
