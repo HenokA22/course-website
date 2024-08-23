@@ -552,7 +552,22 @@ a {
   outline: none;
 }
 
-.most-recent-button:hover {
+#remove-course-btn {
+  right: 15px;
+  bottom: 20px;
+  border-radius: 10px;
+  padding: 5px 10px;
+  background-color: #00000000;
+  border: 4px solid rgb(221, 41, 0);
+
+  /* Animation of button starts here */
+  box-shadow: inset 0 0 0 0 rgb(221, 41, 0);
+  transition: ease-out 0.3s;
+  outline: none;
+}
+
+.most-recent-button:hover, #remove-course-btn:hover {
+  cursor: pointer;
   box-shadow: inset 125px 0 0 0 rgb(221, 41, 0);
   color: white;
 
