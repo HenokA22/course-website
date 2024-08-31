@@ -1,4 +1,4 @@
-# Final Project
+# Course Website Project
 
 ### Guide to Partnered Git
 When multiple people work on the same GitLab project, things become a bit more complicated than the normal `clone`, `add`, `commit`, `push`. The following is a mini guide on how to work with a partner on the same repository. However, this guide is useless without one extremely important thing: **you must communicate with your partner.** If you are going to work on sections of the assignment separately, let your partner know when you are working on which part. This way, you don’t both accidentally work on the same section.
