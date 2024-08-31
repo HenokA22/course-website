@@ -10,7 +10,7 @@ When multiple people work on the same GitLab project, things become a bit more c
 
 If everything goes right with you and your partner pushing to/pulling from git, you won't need to use this part of the guide. However, it is a possibility that something will go wrong so we are going to provide a mini-guide on resolving merge conflicts. You can access it [here](merge-conflict-guide.md).
 
-#### Pull Request work flow
+#### Pull Request Workflow
 
 Here is an overview of the pull request workflow:
 1. “Pull” the changes to your local machine (get the most recent base)
