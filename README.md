@@ -16,8 +16,8 @@ Here is an overview of the pull request workflow:
 1. “Pull” the changes to your local machine (get the most recent base)
 2. Create a “branch” (version)
 3. Commit the changes
-4.a Push your changes
-4.b Open a “pull request” (propose changes)
+ 4.a Push your changes
+ 4.b Open a “pull request” (propose changes)
 5. Discuss and review your code
 6. Rebase and tests
 7. “Merge” your branch to the master branch
