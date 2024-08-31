@@ -1,7 +1,7 @@
 # Course Website Project
 
 ### Guide to Partnered Git
-When multiple people work on the same GitLab project, things become a bit more complicated than the normal `clone`, `add`, `commit`, `push`. The following is a mini guide on how to work with a partner on the same repository. However, this guide is useless without one extremely important thing: **you must communicate with your partner.** If you are going to work on sections of the assignment separately, let your partner know when you are working on which part. This way, you don’t both accidentally work on the same section.
+When multiple people work on the same GitHub project, things become a bit more complicated than the normal `clone`, `add`, `commit`, `push`. The following is a mini guide on how to work with a partner on the same repository. However, this guide is useless without one extremely important thing: **you must communicate with your partner.** If you are going to work on sections of the assignment separately, let your partner know when you are working on which part. This way, you don’t both accidentally work on the same section.
 1. Each person does `git clone` as they would for any normal assignment
 2. Every time before you start working on your local repo, run `git pull`
 3. After you finish implementing what you were working on, do `git add`, `git commit`, and `git push` (Do this **every time**. Do not just save and come back to it later.)
