@@ -22,6 +22,8 @@ Here is an overview of the pull request workflow:
 7. Rebase and tests
 8. “Merge” your branch to the master branch
 
+## Main Features
+
 #### Feature 1: display the items on a “main view” page
 Front End
   * A way for the user to be able to browse through all items
