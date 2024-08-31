@@ -10,6 +10,18 @@ When multiple people work on the same GitLab project, things become a bit more c
 
 If everything goes right with you and your partner pushing to/pulling from git, you won't need to use this part of the guide. However, it is a possibility that something will go wrong so we are going to provide a mini-guide on resolving merge conflicts. You can access it [here](merge-conflict-guide.md).
 
+#### Pull Request work flow
+
+Here is an overview of the pull request workflow:
+1. “Pull” the changes to your local machine (get the most recent base)
+2. Create a “branch” (version)
+3. Commit the changes
+4.a Push your changes
+4.b Open a “pull request” (propose changes)
+5. Discuss and review your code
+6. Rebase and tests
+7. “Merge” your branch to the master branch
+
 #### Feature 1: display the items on a “main view” page
 Front End
   * A way for the user to be able to browse through all items
