@@ -25,6 +25,8 @@
   const SUCCESS_CODE = 200;
   const SECONDS = 2000;
   const BEGINNING_ALPHABET = 65;
+  const HEIGHTPERMIN = 2.216666666666667;
+  const MININHOUR = 60;
   let mainArray = {
     "Course level": filterArrCourseLevel,
     "Subjects": filterArrSubject,
@@ -103,7 +105,8 @@
       let classDate = courseObj[classKey].date;
       let classCredit = courseObj[classKey].credits;
       let classDescription = courseObj[classKey].description;
-      let currCourseDOMAndDate = constructSchedule(className, classDate, classCredit, classDescription);
+      let currCourseDOMAndDate =
+                            constructSchedule(className, classDate, classCredit, classDescription);
       let days = currCourseDOMAndDate[1];
 
       // adding class to each day of the week it occurs
@@ -143,11 +146,8 @@
 
         // Fix the height of the class
         let endTime = aClass.querySelector("a").getAttribute("date-end");
-        console.log(endTime);
-        console.log(time);
         let totalMin = convertMilitaryTimeToMinutes(endTime) - convertMilitaryTimeToMinutes(time);
-        console.log(totalMin);
-        let height = (2.216666666666667) * totalMin;
+        let height = (HEIGHTPERMIN) * totalMin;
 
         aClass.style.height = height + "px";
         // eslint-disable-next-line no-restricted-syntax
@@ -166,7 +166,7 @@
     const [hours, minutes] = timeString.split(':');
 
     // Convert hours and minutes to integers
-    const hoursInMinutes = parseInt(hours, 10) * 60;
+    const hoursInMinutes = parseInt(hours, 10) * MININHOUR;
     const totalMinutes = hoursInMinutes + parseInt(minutes, 10);
 
     return totalMinutes;
@@ -199,7 +199,8 @@
 
     classInfo.onclick = function() {
       openCoursePopup(className, classDate, classCredit, classDescription);
-    }
+    };
+
     // Creating the course name element
     let courseName = document.createElement("em");
     courseName.classList.add("schedule-name");
@@ -212,7 +213,8 @@
   }
 
   /**
-   * openCoursePopup constructs the DOM structure of the pop up modal of the info from the specific class the user selects.
+   * openCoursePopup constructs the DOM structure of the pop up modal of the info from the specifi
+   * class the user selects.
    * @param {String} className - The name of the class.
    * @param {String} classDate - A formated string of the class date info.
    * @param {String} classCredit - Credit for the class
@@ -228,8 +230,10 @@
     let days = dateTime[0];
     let time = dateTime[1];
 
-    document.getElementById('popup-course-description').innerHTML = `<strong>Description:</strong> ${classDescription}`;
-    document.getElementById('popup-course-credit').innerHTML = `<strong>Credits:</strong> ${classCredit}`;
+    document.getElementById('popup-course-description').innerHTML =
+                                      `<strong>Description:</strong> ${classDescription}`;
+    document.getElementById('popup-course-credit').innerHTML =
+                                               `<strong>Credits:</strong> ${classCredit}`;
     document.getElementById('popup-course-date').innerHTML = `<strong>Days:</strong> ${days}`;
     document.getElementById('popup-course-time').innerHTML = `<strong>Time:</strong> ${time}`;
 
@@ -264,7 +268,8 @@
   }
 
   /**
-   * Removes a course from the user's visual schedule and updates the db properly to account for this.
+   * Removes a course from the user's visual schedule and updates the db properly to account for
+   * this.
    * @param {String} className - name of the class
    * @param {String} days - the specific days of the class
    */
@@ -275,7 +280,7 @@
     formData.append("className", className);
 
     try {
-      let result = await fetch("/removeCourse", { method: "POST", body: formData });
+      let result = await fetch("/removeCourse", {method: "POST", body: formData});
       await statusCheck(result);
 
       // Remove the course from the visual schedule
@@ -317,6 +322,7 @@
    * It also handles the event in which you exit out of the page.
    */
   async function openTransaction() {
+
     if (localStorage.length === 0) {
       id("error-message-enroll").textContent = "You must be logged in to view your " +
                                                "enrolled courses.";
@@ -340,8 +346,6 @@
     } else {
       qs(".close-button3").addEventListener("click", toggleEnrolledTransaction2);
       await toggleEnrolledTransaction2();
-
-      // fetchSchedule();
     }
   }
 
@@ -361,7 +365,6 @@
         toggleEnrolledTransaction();
         let data = await result.json();
         let enroll = qs(".pop-up-body-enroll");
-        console.log(enroll);
         let userTransactionCodes = Object.keys(data);
         parseOutAndAppendTransaction(data, enroll, userTransactionCodes);
       }
@@ -387,7 +390,7 @@
       let result = await fetch("/getSchedule/" + username);
       await statusCheck(result);
       let scheduleData = await result.json();
-      let mostRecentTransaction = scheduleData[scheduleData.length - 1];
+      let mostRecentTransaction = scheduleData[scheduleData.length - 1]; // get most recent code
 
       let DOMarr = [];
       for (let i = 0; i < userTransactionCodes.length; i++) {
@@ -409,14 +412,29 @@
 
       for (let i = 0; i < DOMarr.length; i++) {
         let currentObj = DOMarr[i];
-        let currentTCode = Object.keys(currentObj)[0];
-        let currDOMs = currentObj[currentTCode];
+        let currentTCodeAndDate = Object.keys(currentObj)[0];
+        let currentTCode = currentTCodeAndDate.split("  ")[0];
+        let currentTDate = currentTCodeAndDate.split("  ")[1];
+        let currDOMs = currentObj[currentTCodeAndDate]; // getting DOMs by code + date key
 
+        let codeDateHeader = document.createElement("div");
         let tCode = document.createElement("p");
+        let tDate = document.createElement("button");
+
         tCode.textContent = currentTCode;
         tCode.classList.add("enrolled-content");
         tCode.classList.add("tCode-title");
-        enroll.appendChild(tCode);
+
+        tDate.textContent = currentTDate;
+        tDate.classList.add("enrolled-content");
+        tDate.classList.add("tDate-title");
+
+        codeDateHeader.appendChild(tCode);
+        codeDateHeader.appendChild(tDate);
+
+        codeDateHeader.classList.add("code-date-header");
+
+        enroll.appendChild(codeDateHeader);
         for (let j = 0; j < currDOMs.length; j++) {
           let currDOM = currDOMs[j];
           enroll.appendChild(currDOM);
@@ -949,7 +967,11 @@
         let params = new FormData();
         let username = localStorage.key(0);
         let className = qsa('.title')[1].textContent.split(' - ')[0].trim();
-        // determine which hidden id you are referring to this will be based on the current checkbox you have selected.
+
+        /**
+         * determine which hidden id you are referring to this will be based on the current
+         * checkbox you have selected.
+         */
         let checkedBox = document.querySelector('.enrollBox:checked');
         let userId = checkedBox.parentNode.querySelector('#hiddenId').textContent;
         params.append("userName", username);

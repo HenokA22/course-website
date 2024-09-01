@@ -79,12 +79,14 @@ app.get("/getSchedule/:userName", async function(req, res) {
     // Qurerying the database for the schedule code
     let db = await getDBConnection();
     let result = await db.get(query, userName);
-    let scheduleCodeR = result.scheduleCode;
+    let scheduleCodeR = result.scheduleCode; // grab most recent schedule code
 
     // Reading the course history file for the user most recent schedule
     let data = await fs.readFile("courseHistory.json", "utf8");
     let courseHistory = JSON.parse(data);
-    let userPastSchedules = courseHistory[userName][scheduleCodeR];
+
+    // Need to consider if scheduleCodeR is undefined
+    let userPastSchedules = courseHistory[userName][scheduleCodeR]; // grab the most recent schedule
 
     // adding the code to the user past schedules
     userPastSchedules.push(scheduleCodeR);
@@ -94,11 +96,15 @@ app.get("/getSchedule/:userName", async function(req, res) {
 
     // Closing the database connection
     await closeDbConnection(db);
+
   } catch (error) {
+
     res.type("text").status(SERVER_ERROR_CODE)
       .send("An error occurred on the server. Try again later.");
   }
 });
+
+// DeBug the opening the visual schedule.
 
 /** Signs out the user and updates the login status of that user to false. */
 app.post("/signout", async function(req, res) {
@@ -738,9 +744,14 @@ async function updateCourseHistory(db, userName, currentCourses) {
 
     let newCode = createCode();
 
+    // Getting the date at which the course history was adjusted
+    let date = getDate();
+
+    let code = newCode + "  " + date;
+
     // Adding the new code as the link to the most recent schedule to the database
     let newQuery = "UPDATE login SET scheduleCode = ? WHERE username = ?;";
-    await db.run(newQuery, [newCode, userName]);
+    await db.run(newQuery, [code, userName]);
 
     // Gather all the information for each course and update currentCourses
     let newClassRes = "SELECT takingCourse, classId FROM userCourses WHERE username = ?;";
@@ -752,9 +763,9 @@ async function updateCourseHistory(db, userName, currentCourses) {
      */
     let studentClasses = await getStudentClassesInfo(db, currentCourses);
 
-    helperConstructCourseHistory(newCode, studentClasses, userName);
+    helperConstructCourseHistory(newCode, date, studentClasses, userName);
 
-    return newCode;
+    return code; // This is the confirmation code + Date
   } catch (error) {
     console.error("Error in updateCourseHistory:", error);
   }
@@ -764,15 +775,16 @@ async function updateCourseHistory(db, userName, currentCourses) {
  * Helper function used in helperFunction to add the newly course and enrollment confirmation
  * to the courseHistory of the person.
  * @param {String} newCode - String representing the confirmation of enrollment
+ * @param {String} date - String representing the formatted date
  * @param {Object} studentClasses - array representing the curring classes user is enrolled in
  * @param {String} userName - name of the user who is logged in.
  */
-async function helperConstructCourseHistory(newCode, studentClasses, userName) {
+async function helperConstructCourseHistory(newCode, date, studentClasses, userName) {
   /**
    * adding new "transaction(adding a class) to be mapped to a user up to date
    * course schedule.
    */
-  let newTransactionKey = newCode;
+  let newTransactionKey = newCode + "  " + date;
   let data = await fs.readFile("courseHistory.json", "utf8");
   let courseHistory = JSON.parse(data);
 
@@ -822,6 +834,29 @@ function createCode() {
     }
   }
   return newCode;
+}
+
+/**
+ * Creates a formatted date string for the course history
+ * @returns {String} - A string representing the formatted date
+ */
+function getDate() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+  const day = String(now.getDate()).padStart(2, '0');
+
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  hours = hours % 12;
+  hours = hours ? hours : 12; // The hour '0' should be '12'
+  const formattedHours = String(hours).padStart(2, '0');
+
+  const formattedDate = `${month}/${day}/${year} ${formattedHours}:${minutes} ${ampm}`;
+  return formattedDate;
 }
 
 /**
@@ -1012,21 +1047,4 @@ app.listen(PORT);
 
 /**
  * To - dos:
- *
- * 1.) Debug the class enrollment feature. (As we go)
- *
- * 2.) (TODO) Test out the loading of new classes (Try to enroll in a new class live)
- *
- *
- * 3.) Make the visual schedule look pretty (TODO)
- *
- *
- * 4.) (TODO: how to remove course without making the transactions page go away.)
- *
- * 5.) (TODO: How to remove the course from the visual schedule but make li disapear live instead
- *            of having to close modal and reopen it.)
- *
- *
- * 6.) Bug: When adding courses with a mulitiple times, the first course with the earliest time is
- *        added to the schedule. (TODO: Fix this bug)
  */
