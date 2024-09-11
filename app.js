@@ -24,6 +24,7 @@ const RANGE = 6;
 const MAX_ASCII = 126;
 const MIN_ASCII = 33;
 const MINUTES = 60;
+const PORT = process.env.PORT || DEFAULT_PORT;
 let confirmationCodes = new Set();
 
 /**
@@ -1188,7 +1189,6 @@ function handleError(error) {
 
 // tells the code to serve static files in a directory called 'public'
 app.use(express.static('public'));
-const PORT = process.env.PORT || DEFAULT_PORT;
 app.listen(PORT);
 
 /**
