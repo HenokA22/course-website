@@ -14,13 +14,8 @@
   let filterArrSubject = [];
   let filterArrCredit = [];
   let filterArrCourseLevel = [];
-  let dayMap = new Map([
-    ["M", "Monday"],
-    ["T", "Tuesday"],
-    ["W", "Wednesday"],
-    ["Th", "Thursday"],
-    ["F", "Friday"]
-  ]);
+  let dayMap = new Map([["M", "Monday"], ["T", "Tuesday"], ["W", "Wednesday"], ["Th", "Thursday"],
+                                                                                  ["F", "Friday"]]);
   const USER_ERROR_CODE = 400;
   const SUCCESS_CODE = 200;
   const SECONDS = 2000;
@@ -420,17 +415,27 @@
         let codeDateHeader = document.createElement("div");
         let tCode = document.createElement("p");
         let tDate = document.createElement("button");
+        let tDateText = document.createElement("span");
+        let tDateUpdateText = document.createElement("span");
 
         tCode.textContent = currentTCode;
         tCode.classList.add("enrolled-content");
         tCode.classList.add("tCode-title");
 
-        tDate.textContent = currentTDate;
         tDate.classList.add("enrolled-content");
         tDate.classList.add("tDate-title");
+        tDate.addEventListener("click", updateToRequestedSchedule);
+
+        tDateText.textContent = currentTDate;
+        tDateUpdateText.textContent = "Make this your current schedule";
+        tDateText.classList.add("old-text");
+        tDateUpdateText.classList.add("new-text");
 
         codeDateHeader.appendChild(tCode);
         codeDateHeader.appendChild(tDate);
+
+        tDate.appendChild(tDateText);
+        tDate.appendChild(tDateUpdateText);
 
         codeDateHeader.classList.add("code-date-header");
 
@@ -1051,6 +1056,47 @@
 
     // everything is good time to enroll!
     return true;
+  }
+
+  /**
+   * This function updates the current schedule to the requested schedule.
+   */
+  async function updateToRequestedSchedule() {
+    try {
+
+      // Created a form data object to send the username and the code to the server
+      let username = localStorage.key(0);
+      let code = this.parentNode.querySelector("p").textContent;
+      let date = this.querySelector(".old-text").textContent;
+      let fullCode = code + "  " + date;
+      let params = new FormData();
+      params.append("userName", username);
+      params.append("fullCode", fullCode);
+
+      // Fetch the request to update the schedule
+      let response = await fetch("/updateByCode", {method: "POST", body: params});
+      if (response.status === SUCCESS_CODE) {
+
+        /**
+         * Success display message that it was successful and after 2 seconds
+         * close the course page
+         */
+        let successMsg = document.createElement("div");
+        successMsg.classList.add("success");
+        successMsg.textContent = "Success enrollment! Your enrollment receipt code is: '" +
+                                  await response.text() + "'";
+
+        this.parentNode.insertAdjacentElement('beforebegin', successMsg);
+      } else {
+        let errorMessage = document.createElement("div");
+        errorMessage.textContent = await response.text();
+        this.parentNode.insertAdjacentElement('beforebegin', errorMessage);
+        errorMessage.classList.add("error");
+      }
+
+    } catch (error) {
+      handleErr(error);
+    }
   }
 
   /**

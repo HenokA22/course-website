@@ -24,6 +24,7 @@ const RANGE = 6;
 const MAX_ASCII = 126;
 const MIN_ASCII = 33;
 const MINUTES = 60;
+const PORT = process.env.PORT || DEFAULT_PORT;
 let confirmationCodes = new Set();
 
 /**
@@ -103,8 +104,6 @@ app.get("/getSchedule/:userName", async function(req, res) {
       .send("An error occurred on the server. Try again later.");
   }
 });
-
-// DeBug the opening the visual schedule.
 
 /** Signs out the user and updates the login status of that user to false. */
 app.post("/signout", async function(req, res) {
@@ -269,6 +268,126 @@ app.post("/removeCourse", async function(req, res) {
       .send("No username is specified. Please login in before trying to adding a class");
   }
 });
+
+/** Retrives the schedule depending on the code  */
+app.post("/updateByCode", async function(req, res) {
+  // Grabbing code from the request
+  let fullCode = req.body.fullCode;
+  let userName = req.body.userName;
+
+  // Reading the course history file for the requested schedule
+  let data = await fs.readFile("courseHistory.json", "utf8");
+  let courseHistory = JSON.parse(data);
+
+  // Getting specifc schedule from the course history
+  let userPastSchedules = courseHistory[userName][fullCode];
+
+  try {
+    let db = await getDBConnection();
+
+    // I also need to validate if the each course is still available
+    let possibleSchedule = await enoughSeats(db, userPastSchedules);
+
+    if (possibleSchedule) {
+
+      // Update the database to reflect the valid courses (decrmementing the available seats)
+      await decrementCourseSeats(db, userPastSchedules);
+
+      // Update the userCourses table to reflect the new courses
+      await dbReflectNewCourses(db, userName, userPastSchedules);
+
+      // use updateCourseHistory to update the course history
+      let lessInfoCourses = await getCurrentCourses(db, userName, res);
+
+      // Update the course history
+      let newCode = await updateCourseHistory(db, userName, lessInfoCourses);
+
+      // Adding the new code as the link to the most recent schedule to the database
+      let newQuery = "UPDATE login SET scheduleCode = ? WHERE username = ?;";
+      await db.run(newQuery, [newCode, userName]);
+
+      res.type("text").status(SUCCESS_CODE)
+        .send(newCode);
+    } else {
+      res.type("text").status(USER_ERROR_CODE)
+        .send("One or more of the courses in the schedule is no longer available");
+    }
+  } catch (error) {
+    res.type("text").status(SERVER_ERROR_CODE)
+      .send("An error occurred on the server. Try again later.");
+  }
+
+});
+
+/**
+ * Given a user past schedule, this function checks if the courses are still available. Note, this
+ * schedule has been validated to be a valid schedule.
+ * @param {sqlite3.Database} db - The SQLite database connection.
+ * @param {Object[]} proposedSchedule - An array of courses that the user has taken in the past
+ */
+async function decrementCourseSeats(db, proposedSchedule) {
+
+  try {
+    for (const schedule of proposedSchedule) {
+      const className = Object.keys(schedule);
+      const classInfo = schedule[className[0]];
+      const classDate = classInfo.date;
+
+      // eslint-disable-next-line max-len
+      let query = "UPDATE classes SET availableSeats = availableSeats - 1 WHERE shortName = ? AND date = ?;";
+      await db.run(query, [className[0], classDate]);
+
+    }
+  } catch (error) {
+    console.error("Server Error with decrementing classes", error);
+
+  }
+}
+
+/**
+ * Updates the database to reflect the new courses the user is taking
+ * @param {sqlite3.Database} db - The SQLite database connection.
+ * @param {String} userName - The username of the logged in user
+ * @param {Object[]} currentCourses - An array of courses that the user planning to take
+ */
+async function dbReflectNewCourses(db, userName, currentCourses) {
+  try {
+    // Add available seats to the classes table
+    const response = await fetch(`http://localhost:${PORT}/getSchedule/${userName}`);
+    const data = await response.json();
+
+    for (const course of data) {
+      if (typeof course !== "string") {
+        const classKey = Object.keys(course);
+        const classDate = course[classKey[0]].date;
+
+        // Incrementing the count of classes
+        // eslint-disable-next-line max-len
+        let query = "UPDATE classes SET availableSeats = availableSeats + 1 WHERE shortName = ? AND date = ?;";
+        await db.run(query, [classKey[0], classDate]);
+      }
+    }
+
+    // Drop all the current courses
+    let query = "DELETE FROM userCourses WHERE username = ?;";
+    await db.run(query, userName);
+
+    for (const course of currentCourses) {
+      const classKey = Object.keys(course);
+      const classDate = course[classKey[0]].date;
+
+      // Getting ID of the class to use in next query
+      query = "SELECT id FROM classes WHERE shortName = ? AND date = ?;";
+      let classId = await db.get(query, [classKey[0], classDate]);
+      let id = classId.id;
+
+      query = "INSERT INTO userCourses (classId, username, takingCourse) VALUES (?, ?, ?);";
+      await db.run(query, [id, userName, classKey[0]]);
+    }
+  } catch (error) {
+    console.error("Server Error with updating schedule on the server", error);
+  }
+}
 
 /**
  * Function that checks the login status of the user given the params
@@ -935,6 +1054,34 @@ async function checkConflict(db, toBeEnrolledCourseDate, currentCourses) {
 }
 
 /**
+ * Given a proposed schedule, checks if there are enough seats in each class.
+ * @param {sqlite3.Database} db - The database object for the connection
+ * @param {Object[]} proposedSchedule - An array of objects representing the proposed schedule
+ * @returns {boolean} - A boolean representing if there are enough seats in every class
+ */
+async function enoughSeats(db, proposedSchedule) {
+  try {
+    for (const schedule of proposedSchedule) {
+      const className = Object.keys(schedule);
+      let classInfo = schedule[className[0]];
+
+      let classDate = classInfo.date;
+
+      let query = "SELECT availableSeats FROM classes WHERE shortName = ? AND date = ?;";
+      let result = await db.get(query, [className[0], classDate]);
+
+      if (result.availableSeats <= 0) {
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error("Server Error with checking seats", error);
+    handleError(error);
+  }
+}
+
+/**
  * Retrives the dates and times of both a current class a student is taking and the enrolled one
  * the student plans on taking.
  * @param {sqlite3.Database} db - The database object for the connection
@@ -1042,7 +1189,6 @@ function handleError(error) {
 
 // tells the code to serve static files in a directory called 'public'
 app.use(express.static('public'));
-const PORT = process.env.PORT || DEFAULT_PORT;
 app.listen(PORT);
 
 /**
