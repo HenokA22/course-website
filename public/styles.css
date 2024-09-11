@@ -529,24 +529,73 @@ a {
   color: white;
   font-size: 1.5rem;
   font-weight: bold;
-  border: 5px solid red;
-
   flex-grow: 7;
 }
 
 .tDate-title {
-  /** when hovering over it a text appear that says make current schedule */
-  border: 5px solid blue;
-
+  position: relative;
+  overflow: hidden; /* Ensures that overflow text is hidden */
+  background-color: #85754d; /* Initial background color */
   flex-grow: 2;
+  height: 58px;
+  margin-top: 18px;
+  margin-left: 10px;
+  width: 200px;
+  color: white;
+  font-size: 1.0rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 0;
+  border-radius: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Initial box shadow */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for color and shadow */
 }
+
+/* Apply to both text spans */
+.tDate-title span {
+  position: absolute;
+  width: 100%;
+  white-space: nowrap;
+  transition: transform 0.5s ease;
+}
+
+/* Keep the text vertically centered */
+.old-text {
+  left: 0;
+}
+
+.new-text {
+  left: 100%; /* Start off to the right, hidden */
+}
+
+/* On hover: slide out the old text */
+.tDate-title:hover .old-text {
+  transform: translateX(-100%);
+}
+
+/* On hover: slide in the new text */
+.tDate-title:hover .new-text {
+  transform: translateX(-100%);
+}
+
+/* Lighter background color and enhanced shadow on hover */
+.tDate-title:hover {
+  background-color: #a69f80; /* Lightened background color */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); /* Enhanced shadow for better visibility */
+}
+
 
 .code-date-header {
   display: flex;
   justify-content: space-between;
+  align-items: stretch;
   margin-top: 10px;
   margin-bottom: 10px;
-  border: 5px solid green;
 }
 
 /* Making parent of remove button position to enable for child button to move relative to it */
