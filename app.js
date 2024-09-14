@@ -254,11 +254,10 @@ app.post("/removeCourse", async function(req, res) {
       let currentCourses = await getCurrentCourses(db, userName, res);
 
       // Update the course history
-      await updateCourseHistory(db, userName, currentCourses); // double check this later
+      let codeAndDate = await updateCourseHistory(db, userName, currentCourses); // double check this later
       await closeDbConnection(db);
 
-      res.type("text").status(SUCCESS_CODE)
-        .send("Removing course successful");
+      res.json(codeAndDate);
 
     } catch (error) {
       console.error("Error:2", error);
@@ -586,11 +585,13 @@ async function constructSearchQueryHelper(className, classQueryUsed, query, vali
 
     // Empty array (query) represents no matching classes
     if (result2.length === 0) {
-      throw new Error("No matching results");
+      res.type("text").status(USER_ERROR_CODE)
+        .send("No such class exists");
+    } else {
+      let matchingSearchClasses = {"classes": result2};
+      await closeDbConnection(db);
+      res.json(matchingSearchClasses);
     }
-    let matchingSearchClasses = {"classes": result2};
-    await closeDbConnection(db);
-    res.json(matchingSearchClasses);
   } catch (error) {
     if (error.message === "No matching results") {
       res.type("text").status(USER_ERROR_CODE)
