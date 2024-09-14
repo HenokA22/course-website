@@ -526,14 +526,21 @@
     try {
       let result = await fetch("/removeCourse", {method: "POST", body: formData});
       await statusCheck(result);
+      let data = await result.json();
 
-      let result2 = await fetch("/previousTransactions?username=" + username);
-      await statusCheck(result2);
-      let data = await result2.json();
-      let enroll = qs(".pop-up-body-enroll");
-      enroll.innerHTML = "";
-      let userTransactionCodes = Object.keys(data);
-      parseOutAndAppendTransaction(data, enroll, userTransactionCodes);
+      // add a success attribute to tell the user they have successfully removed a class.
+      let successMsg = document.createElement("div");
+      successMsg.classList.add("success");
+      successMsg.textContent = "Successful removing a class! Your enrollment receipt code is: '" +
+                               data.split(" ")[0] + "'";
+
+      this.parentNode.previousElementSibling.insertAdjacentElement('beforebegin', successMsg);
+
+      // adding a delay so user can see the success enrollment before it
+      // updatesthe user transaction screen immediately.
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      updateUserTransaction(username);
 
     } catch (error) {
       console.error("Error Message FrontEnd:", error);
@@ -549,17 +556,26 @@
     try {
       let searchTerm = id("course-input").value.trim();
       let result = await fetch("/search?className=" + searchTerm);
-      await statusCheck(result);
-      let data = await result.json();
-      let classList = id("classes");
-      classList.innerHTML = '';
-      for (let i = 0; i < data.classes.length; i++) {
-        let currObj = data.classes[i];
-        let currCourseDOM = constructCourse(currObj);
-        currCourseDOM.addEventListener('click', openCourse);
-        classList.appendChild(currCourseDOM);
+      if (result.status === 400) {
+        // clear the inner HTML and display a error saying no classes such found.
+        let classList = id("classes");
+        classList.innerHTML = '';
+        let errorTitle = document.createElement("h2");
+        errorTitle.textContent = "No such classes found for: " + searchTerm;
+        errorTitle.classList.add('error');
+        classList.append(errorTitle);
+      } else {
+        let data = await result.json();
+        let classList = id("classes");
+        classList.innerHTML = '';
+        for (let i = 0; i < data.classes.length; i++) {
+          let currObj = data.classes[i];
+          let currCourseDOM = constructCourse(currObj);
+          currCourseDOM.addEventListener('click', openCourse);
+          classList.appendChild(currCourseDOM);
+        }
+        id("reset-button").classList.remove("hidden");
       }
-      id("reset-button").classList.remove("hidden");
     } catch (err) {
       handleErr(err);
     }
@@ -1087,6 +1103,14 @@
                                   await response.text() + "'";
 
         this.parentNode.insertAdjacentElement('beforebegin', successMsg);
+
+        // adding a delay so user can see the success enrollment before it
+        // updatesthe user transaction screen immediately.
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // update theuser transaction by fetching current course history and clearing
+        // what we have so far and displaying new course history.
+        updateUserTransaction(username);
       } else {
         let errorMessage = document.createElement("div");
         errorMessage.textContent = await response.text();
@@ -1094,6 +1118,24 @@
         errorMessage.classList.add("error");
       }
 
+    } catch (error) {
+      handleErr(error);
+    }
+  }
+
+  /**
+   * Method that fetches the course history and updates the pop up of the user transaction
+   * to be the newest one.
+   */
+  async function updateUserTransaction(username) {
+    try {
+      let result2 = await fetch("/previousTransactions?username=" + username);
+      await statusCheck(result2);
+      let data = await result2.json();
+      let enroll = qs(".pop-up-body-enroll");
+      enroll.innerHTML = "";
+      let userTransactionCodes = Object.keys(data);
+      parseOutAndAppendTransaction(data, enroll, userTransactionCodes);
     } catch (error) {
       handleErr(error);
     }

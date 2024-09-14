@@ -585,6 +585,7 @@ a {
 
 /* Lighter background color and enhanced shadow on hover */
 .tDate-title:hover {
+  cursor: pointer;
   background-color: #a69f80; /* Lightened background color */
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); /* Enhanced shadow for better visibility */
 }
