@@ -129,4 +129,4 @@ Based on your implementation choices, it might be better to combine some of the 
 
 # Internal Requirements
 
-All patterns and practices defined as internal requirements in past assignments continue to apply here (e.g., following code quality guidelines, using the module pattern in front end JavaScript, proper use of `async`/`await` and promises, all errors handled appropriately, `statusCheck` used appropriately in fetch chains, minimizing the use of module-global variables, etc.).
+Follow code quality guidelines, using the module pattern in front-end JavaScript, proper use of `async`/`await` and promises, all errors handled appropriately, `statusCheck` used appropriately in fetch chains, minimizing the use of module-global variables, etc.
