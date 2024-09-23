@@ -620,6 +620,26 @@ app.get("/previousTransactions", async function(req, res) {
   }
 });
 
+app.get("/courseHistory", async function(req, res) {
+  let username = req.query.username;
+  let data = await fs.readFile("courseHistory.json", "utf8");
+  let courseHistory = JSON.parse(data);
+
+  if (username in courseHistory) {
+    if (Object.keys(courseHistory[username]).length === 0) {
+      console.log("hello i am in here");
+      res.type("text").status(USER_ERROR_CODE)
+        .send("Empty course history for user.");
+    } else {
+      res.type("json").status(SUCCESS_CODE)
+        .send(courseHistory);
+    }
+  } else {
+    res.type("text").status(USER_ERROR_CODE)
+      .send("User does not exist.");
+  }
+});
+
 /**
  * Helper method that sends the courseHistory back to the client.
  * @param {String} username - username of the user
