@@ -9,6 +9,7 @@
  */
 
 "use strict";
+
 (function() {
   let filterArrDate = [];
   let filterArrSubject = [];
@@ -22,6 +23,7 @@
   const BEGINNING_ALPHABET = 65;
   const HEIGHTPERMIN = 2.216666666666667;
   const MININHOUR = 60;
+
   let mainArray = {
     "Course level": filterArrCourseLevel,
     "Subjects": filterArrSubject,
@@ -323,10 +325,19 @@
                                                "enrolled courses.";
       id("error-message-enroll").classList.add("error");
     } else {
-      id("error-message-enroll").textContent = "";
-      qs(".pop-up-body-enroll").innerHTML = "";
-      qs(".close-button2").addEventListener("click", toggleEnrolledTransaction);
-      await fetchEnrolledCourses();
+      // check if there contains things in the courseHistory if not then display
+      // a error
+      let containsHistory = await fetch('/courseHistory?username=' + localStorage.key(0));
+      if (containsHistory.status === USER_ERROR_CODE) {
+        id("error-message-enroll").textContent = "User does not have any available classes. Please enroll in some.";
+        id("error-message-enroll").classList.add("error");
+      } else {
+        id("error-message-enroll").textContent = "";
+        qs(".pop-up-body-enroll").innerHTML = "";
+        qs(".close-button2").addEventListener("click", toggleEnrolledTransaction);
+        await fetchEnrolledCourses();
+      }
+
     }
   }
 
@@ -339,8 +350,14 @@
                                                "enrolled courses.";
       id("error-message-enroll").classList.add("error");
     } else {
-      qs(".close-button3").addEventListener("click", toggleEnrolledTransaction2);
-      await toggleEnrolledTransaction2();
+      let containsHistory = await fetch('/courseHistory?username=' + localStorage.key(0));
+      if (containsHistory.status === USER_ERROR_CODE) {
+        id("error-message-enroll").textContent = "Cannot view schedule. User does not have classes, please enroll in some.";
+        id("error-message-enroll").classList.add("error");
+      } else {
+        qs(".close-button3").addEventListener("click", toggleEnrolledTransaction2);
+        await toggleEnrolledTransaction2();
+      }
     }
   }
 
