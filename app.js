@@ -254,7 +254,8 @@ app.post("/removeCourse", async function(req, res) {
       let currentCourses = await getCurrentCourses(db, userName, res);
 
       // Update the course history
-      let codeAndDate = await updateCourseHistory(db, userName, currentCourses); // double check this later
+      let codeAndDate = await updateCourseHistory(db, userName, currentCourses);
+
       await closeDbConnection(db);
 
       res.json(codeAndDate);
@@ -627,7 +628,6 @@ app.get("/courseHistory", async function(req, res) {
 
   if (username in courseHistory) {
     if (Object.keys(courseHistory[username]).length === 0) {
-      console.log("hello i am in here");
       res.type("text").status(USER_ERROR_CODE)
         .send("Empty course history for user.");
     } else {
