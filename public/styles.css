@@ -255,6 +255,10 @@ a {
   color: white;
 }
 
+.close-button3 {
+  padding-bottom: 4px;
+}
+
 .pop-up-header2, .pop-up-header3, .pop-up-header-schedule {
   background-color: #85754d;
   color: white;
