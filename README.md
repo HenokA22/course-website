@@ -93,7 +93,7 @@ Back End
 
 Based on your implementation choices, it might be better to combine some of the endpoints listed above or split them into multiple smaller endpoints. This is allowed as long as you make sure to include all of the same back end functionality. However, you must have at least 4 endpoints defined in your `app.js`.
 
-### Additional Features (Choose Two)
+### Additional Features (Decide on Two)
 
 #### Course Enrollment Site
 
@@ -129,4 +129,4 @@ Based on your implementation choices, it might be better to combine some of the 
 
 # Internal Requirements
 
-Follow code quality guidelines, using the module pattern in front-end JavaScript, proper use of `async`/`await` and promises, all errors handled appropriately, `statusCheck` used appropriately in fetch chains, minimizing the use of module-global variables, etc.
+Use code quality guidelines, focus on using the module pattern in front-end JavaScript, proper use of `async`/`await` and promises, all errors handled appropriately, `statusCheck` used appropriately in fetch chains, minimizing the use of module-global variables, etc.
